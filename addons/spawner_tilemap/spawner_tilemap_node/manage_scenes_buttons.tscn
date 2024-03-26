@@ -1,0 +1,60 @@
+[gd_scene load_steps=4 format=2]
+
+[sub_resource type="StyleBoxFlat" id=2]
+bg_color = Color( 0.6, 0.6, 0.6, 0 )
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color( 1, 1, 1, 1 )
+
+[sub_resource type="StyleBoxFlat" id=3]
+bg_color = Color( 1, 1, 1, 1 )
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color( 1, 1, 1, 1 )
+
+[sub_resource type="StyleBoxFlat" id=1]
+bg_color = Color( 0.6, 0.6, 0.6, 0 )
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color( 1, 1, 0, 1 )
+
+[node name="VBoxContainer" type="VBoxContainer"]
+margin_right = 91.0
+margin_bottom = 74.0
+grow_horizontal = 2
+
+[node name="EditScenesButton" type="Button" parent="."]
+margin_right = 91.0
+margin_bottom = 35.0
+grow_horizontal = 2
+rect_min_size = Vector2( 0, 35 )
+hint_tooltip = "Open the tile to scene editor."
+focus_mode = 0
+mouse_default_cursor_shape = 2
+size_flags_horizontal = 3
+text = "Edit scenes"
+
+[node name="SpawnScenesButton" type="Button" parent="."]
+margin_top = 39.0
+margin_right = 91.0
+margin_bottom = 74.0
+grow_horizontal = 2
+rect_min_size = Vector2( 0, 35 )
+hint_tooltip = "Spawn in the editor scene hierarchy the respective scenes based on the current visible tiles."
+focus_mode = 0
+mouse_default_cursor_shape = 2
+size_flags_horizontal = 3
+custom_colors/font_color_focus = Color( 1, 1, 0, 1 )
+custom_colors/font_color = Color( 1, 1, 0, 1 )
+custom_colors/font_color_hover = Color( 1, 1, 1, 1 )
+custom_colors/font_color_pressed = Color( 0, 0, 0, 1 )
+custom_styles/hover = SubResource( 2 )
+custom_styles/pressed = SubResource( 3 )
+custom_styles/normal = SubResource( 1 )
+text = "Spawn Scenes"
