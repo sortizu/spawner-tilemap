@@ -14,26 +14,14 @@ _global_script_classes=[ {
 "language": "GDScript",
 "path": "res://addons/spawner_tilemap/spawner_tilemap_node/spawner_tile_map.gd"
 }, {
-"base": "Reference",
-"class": "TileToNodeRes",
-"language": "GDScript",
-"path": "res://addons/spawner_tilemap/spawner_tilemap_node/tile_to_scene_res.gd"
-}, {
 "base": "Resource",
 "class": "TileToSceneDictionary",
 "language": "GDScript",
 "path": "res://addons/spawner_tilemap/spawner_tilemap_node/tile_to_scene_dictionary.gd"
-}, {
-"base": "WindowDialog",
-"class": "TileToSceneEditor",
-"language": "GDScript",
-"path": "res://addons/spawner_tilemap/tile_to_scene_editor/tile_to_scene_editor.gd"
 } ]
 _global_script_class_icons={
 "SpawnerTileMap": "",
-"TileToNodeRes": "",
-"TileToSceneDictionary": "",
-"TileToSceneEditor": ""
+"TileToSceneDictionary": ""
 }
 
 [application]
@@ -42,13 +30,29 @@ config/name="SpawnerTileMap"
 run/main_scene="res://addons/spawner_tilemap/spawner_tilemap_node/spawner_tile_map.tscn"
 config/icon="res://icon.png"
 
+[debug]
+
+gdscript/warnings/unused_class_variable=true
+gdscript/warnings/unsafe_property_access=true
+gdscript/warnings/unsafe_method_access=true
+gdscript/warnings/unsafe_cast=true
+gdscript/warnings/unsafe_call_argument=true
+
 [editor_plugins]
 
 enabled=PoolStringArray( "res://addons/godot-plugin-refresher/plugin.cfg", "res://addons/spawner_tilemap/plugin.cfg" )
 
+[global]
+
+out=false
+
 [gui]
 
 common/drop_mouse_on_gui_input_disabled=true
+
+[memory]
+
+limits/message_queue/max_size_kb=1024
 
 [physics]
 

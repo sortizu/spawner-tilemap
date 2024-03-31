@@ -1,4 +1,7 @@
-[gd_scene load_steps=4 format=2]
+[gd_scene load_steps=6 format=2]
+
+[ext_resource path="res://addons/spawner_tilemap/spawn.svg" type="Texture" id=1]
+[ext_resource path="res://addons/spawner_tilemap/spawner_tilemap_node/manage_scenes_buttons.gd" type="Script" id=2]
 
 [sub_resource type="StyleBoxFlat" id=2]
 bg_color = Color( 0.6, 0.6, 0.6, 0 )
@@ -24,26 +27,51 @@ border_width_right = 1
 border_width_bottom = 1
 border_color = Color( 1, 1, 0, 1 )
 
-[node name="VBoxContainer" type="VBoxContainer"]
-margin_right = 91.0
+[node name="MarginContainer" type="MarginContainer"]
+margin_right = 500.0
 margin_bottom = 74.0
+custom_constants/margin_top = 2
+custom_constants/margin_bottom = 5
+script = ExtResource( 2 )
+edit_scenes_button_path = NodePath("ManageScenesButtons/EditScenesButton")
+clean_scenes_button_path = NodePath("ManageScenesButtons/CleanScenesButton")
+spawn_scenes_button_path = NodePath("ManageScenesButtons/SpawnScenesButton")
+
+[node name="ManageScenesButtons" type="VBoxContainer" parent="."]
+margin_top = 2.0
+margin_right = 500.0
+margin_bottom = 95.0
 grow_horizontal = 2
 
-[node name="EditScenesButton" type="Button" parent="."]
-margin_right = 91.0
-margin_bottom = 35.0
+[node name="EditScenesButton" type="Button" parent="ManageScenesButtons"]
+margin_right = 500.0
+margin_bottom = 25.0
 grow_horizontal = 2
-rect_min_size = Vector2( 0, 35 )
+rect_min_size = Vector2( 0, 25 )
 hint_tooltip = "Open the tile to scene editor."
 focus_mode = 0
 mouse_default_cursor_shape = 2
 size_flags_horizontal = 3
 text = "Edit scenes"
+expand_icon = true
 
-[node name="SpawnScenesButton" type="Button" parent="."]
-margin_top = 39.0
-margin_right = 91.0
-margin_bottom = 74.0
+[node name="CleanScenesButton" type="Button" parent="ManageScenesButtons"]
+margin_top = 29.0
+margin_right = 500.0
+margin_bottom = 54.0
+grow_horizontal = 2
+rect_min_size = Vector2( 0, 25 )
+hint_tooltip = "Deletes all children of the container node."
+focus_mode = 0
+size_flags_horizontal = 3
+disabled = true
+text = "Clean instanced scenes"
+expand_icon = true
+
+[node name="SpawnScenesButton" type="Button" parent="ManageScenesButtons"]
+margin_top = 58.0
+margin_right = 500.0
+margin_bottom = 93.0
 grow_horizontal = 2
 rect_min_size = Vector2( 0, 35 )
 hint_tooltip = "Spawn in the editor scene hierarchy the respective scenes based on the current visible tiles."
@@ -58,3 +86,5 @@ custom_styles/hover = SubResource( 2 )
 custom_styles/pressed = SubResource( 3 )
 custom_styles/normal = SubResource( 1 )
 text = "Spawn Scenes"
+icon = ExtResource( 1 )
+expand_icon = true
