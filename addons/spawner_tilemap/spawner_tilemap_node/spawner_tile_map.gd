@@ -15,19 +15,17 @@ onready var container_node = get_node_or_null(container_node_path)
 # It stores each tile id as a key and a PackedScene as the value for each id.
 # TIP: Set this variable manually if you are
 # already using a similar dictionary format for your project.
-var tile_to_scene_dictionary: TileToSceneDictionary
+var tile_to_scene_dictionary: Resource setget set_tile_to_scene_dict
 # ----------------------- SIGNALS -----------------------
 signal scenes_instanced
 signal instanced_scenes_cleaned
-
-func _init() -> void:
+	
+func _ready() -> void:
 	if not tile_to_scene_dictionary:
 		var new_tile_to_scene_dict = TileToSceneDictionary.new()
 		# warning-ignore:unsafe_property_access
 		new_tile_to_scene_dict.loaded_dictionary=true
-		tile_to_scene_dictionary = new_tile_to_scene_dict
-	
-func _ready() -> void:
+		set_tile_to_scene_dict(new_tile_to_scene_dict)
 	if not Engine.editor_hint:
 		if spawn_scenes_at_start:
 			instance_scenes_from_dictionary()
@@ -60,15 +58,14 @@ func _get(property: String):
 	if property == "tile_to_scene_dictionary":
 		return tile_to_scene_dictionary
 
+func set_tile_to_scene_dict(new_dict: Resource):
+	if not (not new_dict or new_dict is TileToSceneDictionary):
+		printerr("Resource set in tile_to_scene_dictionary is not a TileToSceneDictionary type.")
+	else:
+		tile_to_scene_dictionary = new_dict
+
 func _set(property: String, value) -> bool:
-	print(property+": "+str(value))
-	if property == "tile_to_scene_dictionary":
-		if not (value is TileToSceneDictionary or not value):
-			printerr("Resource set in tile_to_scene_dictionary is not a TileToSceneDictionary type.")
-		else:
-			tile_to_scene_dictionary = value
-			return false
-	return true
+	return false
 
 # Instances scenes in the container node according to the visible tiles in this tilemap.
 func instance_scenes_from_dictionary():
