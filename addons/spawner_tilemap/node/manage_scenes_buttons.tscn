@@ -1,6 +1,7 @@
-[gd_scene load_steps=5 format=2]
+[gd_scene load_steps=6 format=2]
 
 [ext_resource path="res://addons/spawner_tilemap/node/manage_scenes_buttons.gd" type="Script" id=1]
+[ext_resource path="res://addons/spawner_tilemap/spawn.svg" type="Texture" id=2]
 
 [sub_resource type="StyleBoxFlat" id=2]
 bg_color = Color( 0.6, 0.6, 0.6, 0 )
@@ -85,5 +86,5 @@ custom_styles/hover = SubResource( 2 )
 custom_styles/pressed = SubResource( 3 )
 custom_styles/normal = SubResource( 1 )
 text = "Spawn Scenes"
-icon = null
+icon = ExtResource( 2 )
 expand_icon = true
