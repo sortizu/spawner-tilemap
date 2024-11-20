@@ -1,5 +1,9 @@
+# Godot-specific ignores
 .import/
 export.cfg
 export_presets.cfg
-addons/godot-plugin-refresher/
-scenes/
+
+# Project specific ignores
+addons/*
+!addons/spawner_tilemap/
+!addons/spawner_tilemap/**

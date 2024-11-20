@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=2]
 
-[ext_resource path="res://addons/spawner_tilemap/tile_to_scene_editor/tile_to_scene_editor.gd" type="Script" id=1]
+[ext_resource path="res://addons/spawner_tilemap/editor/tile_to_scene_editor.gd" type="Script" id=1]
 
 [sub_resource type="StyleBoxFlat" id=1]
 bg_color = Color( 0.14902, 0.172549, 0.231373, 1 )

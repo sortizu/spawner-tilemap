@@ -16,13 +16,14 @@ onready var container_node = get_node_or_null(container_node_path)
 # TIP: Set this variable manually if you are
 # already using a similar dictionary format for your project.
 var tile_to_scene_dictionary: Resource setget set_tile_to_scene_dict
+var tile_to_scene_dict_script: GDScript = preload("res://addons/spawner_tilemap/node/tile_to_scene_dictionary.gd")
 # ----------------------- SIGNALS -----------------------
 signal scenes_instanced
 signal instanced_scenes_cleaned
 	
 func _ready() -> void:
 	if not tile_to_scene_dictionary:
-		var new_tile_to_scene_dict = TileToSceneDictionary.new()
+		var new_tile_to_scene_dict = tile_to_scene_dict_script.new()
 		# warning-ignore:unsafe_property_access
 		new_tile_to_scene_dict.loaded_dictionary=true
 		set_tile_to_scene_dict(new_tile_to_scene_dict)
@@ -54,23 +55,23 @@ func _get_property_list() -> Array:
 	})
 	return properties
 
-func _get(property: String):
-	if property == "tile_to_scene_dictionary":
-		return tile_to_scene_dictionary
+#func _get(property: String):
+#	if property == "tile_to_scene_dictionary":
+#		return tile_to_scene_dictionary
 
 func set_tile_to_scene_dict(new_dict: Resource):
-	if not (not new_dict or new_dict is TileToSceneDictionary):
-		printerr("Resource set in tile_to_scene_dictionary is not a TileToSceneDictionary type.")
+	if not (not new_dict or new_dict.get_class() == "TileToSceneDictionary"):
+		printerr("[SpawnerTileMap] Resource set in tile_to_scene_dictionary is not a TileToSceneDictionary type.")
 	else:
 		tile_to_scene_dictionary = new_dict
 
-func _set(property: String, value) -> bool:
-	return false
+#func _set(property: String, value) -> bool:
+#	return false
 
-# Instances scenes in the container node according to the visible tiles in this tilemap.
+## Instances scenes in the container node according to the visible tiles in this tilemap.
 func instance_scenes_from_dictionary():
 	if not container_node:
-		printerr("SpawnerTileMap: There isn't any container node selected to instance the scenes.")
+		printerr("[SpawnerTileMap] There isn't any container node selected to instance the scenes.")
 		return
 	for cell_pos in get_used_cells():
 		var tile_id = get_cell(cell_pos.x,cell_pos.y)
@@ -87,16 +88,16 @@ func instance_scenes_from_dictionary():
 	if clean_after_spawning:
 		clear()
 	emit_signal("scenes_instanced")
-	print("SpawnerTileMap: Scenes instanced successfully.")
+	print("[SpawnerTileMap] Scenes instanced successfully.")
 
-# Deletes all child nodes from the container node
+## Deletes all child nodes from the container node
 func clean_instanced_scenes():
 	if container_node:
 		for child in container_node.get_children():
 			child.queue_free()
 		emit_signal("instanced_scenes_cleaned")
 
-# Set function for container_node_path.
+## Set function for container_node_path.
 func set_container_nodepath(new_nodepath:NodePath):
 	container_node = get_node_or_null(new_nodepath)
 	container_node_path = new_nodepath

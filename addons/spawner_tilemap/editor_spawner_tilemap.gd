@@ -1,8 +1,8 @@
 extends EditorInspectorPlugin
 
 # -------------------------- DEPENDENCIES ---------------------------
-var manage_scenes_buttons: PackedScene = preload("res://addons/spawner_tilemap/spawner_tilemap_node/manage_scenes_buttons.tscn")
-var tile_to_scene_editor: PackedScene = preload("res://addons/spawner_tilemap/tile_to_scene_editor/tile_to_scene_editor.tscn")
+var manage_scenes_buttons: PackedScene = preload("res://addons/spawner_tilemap/node/manage_scenes_buttons.tscn")
+var tile_to_scene_editor: PackedScene = preload("res://addons/spawner_tilemap/editor/tile_to_scene_editor.tscn")
 var editor_interface: EditorInterface
 var edit_scenes_button:Button
 var clean_scenes_button:Button

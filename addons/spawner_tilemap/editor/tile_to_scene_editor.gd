@@ -2,7 +2,7 @@ tool
 extends WindowDialog
 
 # ---------------------------- DEPENDENCIES ------------------------------------
-var tile_to_scene_row: PackedScene = preload("res://addons/spawner_tilemap/tile_to_scene_editor/tile_to_scene_row.tscn")
+var tile_to_scene_row: PackedScene = preload("res://addons/spawner_tilemap/editor/tile_to_scene_row.tscn")
 var editor_interface: EditorInterface
 var spawner_tilemap: SpawnerTileMap
 # Child nodes
@@ -37,7 +37,7 @@ func add_row(texture:Texture,tile_region:Rect2,tile_id:int,scene:PackedScene):
 ##
 func update_rows():
 	var tile_set: TileSet = spawner_tilemap.tile_set
-	var tile_to_scene_dictionary: TileToSceneDictionary = spawner_tilemap.tile_to_scene_dictionary
+	var tile_to_scene_dictionary = spawner_tilemap.tile_to_scene_dictionary
 	if tile_set:
 		for tile_id in tile_set.get_tiles_ids():
 			var scene: PackedScene = null
@@ -46,7 +46,7 @@ func update_rows():
 			add_row(tile_set.tile_get_texture(tile_id),tile_set.tile_get_region(tile_id),tile_id,scene)
 
 func _on_SaveButton_pressed() -> void:
-	var tile_to_scene_dictionary: TileToSceneDictionary = spawner_tilemap.tile_to_scene_dictionary
+	var tile_to_scene_dictionary = spawner_tilemap.tile_to_scene_dictionary
 	for row in main_container.get_children():
 		var tile_id = row.tile_id
 		var scene = row.scene_resource_picker.edited_resource

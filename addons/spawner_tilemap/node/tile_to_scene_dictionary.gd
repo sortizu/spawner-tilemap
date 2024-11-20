@@ -1,6 +1,6 @@
 tool
 extends Resource
-class_name TileToSceneDictionary
+#class_name TileToSceneDictionary
 # ---------------------------- RESOURCE VARIABLES --------------------------
 export (Dictionary) var dictionary: Dictionary setget set_dictionary
 var loaded_dictionary:bool = false
@@ -18,3 +18,6 @@ func set_dictionary(new_dictionary:Dictionary):
 
 func get_scene_by_tile_id(id:int)->PackedScene:
 	return dictionary[id]
+
+func get_class():
+	return "TileToSceneDictionary"
