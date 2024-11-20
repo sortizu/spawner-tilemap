@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=2]
+
+[ext_resource path="res://addons/spawner_tilemap/spawn.svg" type="Texture" id=1]
+
+[node name="Sprite" type="Sprite"]
+texture = ExtResource( 1 )

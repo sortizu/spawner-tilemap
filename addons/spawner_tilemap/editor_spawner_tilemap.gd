@@ -13,8 +13,9 @@ func can_handle(object: Object) -> bool:
 	return object is SpawnerTileMap
 
 func parse_property(object: Object, type: int, path: String, hint: int, hint_text: String, usage: int) -> bool:
-	if path == "_manage_buttons":
-		spawner_tilemap = editor_interface.get_selection().get_selected_nodes()[0]
+	var selected_nodes: Array = editor_interface.get_selection().get_selected_nodes()
+	if selected_nodes.size()>0 and path == "_manage_buttons":
+		spawner_tilemap = selected_nodes[0]
 		var buttons = manage_scenes_buttons.instance()
 		add_custom_control(buttons)
 		edit_scenes_button = buttons.get_node_or_null(buttons.edit_scenes_button_path)
