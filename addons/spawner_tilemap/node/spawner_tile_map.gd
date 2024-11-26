@@ -1,6 +1,6 @@
 tool
 extends TileMap
-class_name SpawnerTileMap
+class_name SpawnerTileMap, "res://addons/spawner_tilemap/spawner_tile_map.svg"
 # ----------------------- Class Variables -----------------------
 # Instance the scenes according to the tiles showed in the tilemap
 # or disable the instancing function (it will work as usual tilemap)

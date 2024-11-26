@@ -15,7 +15,7 @@ _global_script_classes=[ {
 "path": "res://addons/spawner_tilemap/node/spawner_tile_map.gd"
 } ]
 _global_script_class_icons={
-"SpawnerTileMap": ""
+"SpawnerTileMap": "res://addons/spawner_tilemap/spawner_tile_map.svg"
 }
 
 [application]
