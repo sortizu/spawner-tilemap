@@ -4,6 +4,7 @@ extends EditorInspectorPlugin
 var manage_scenes_buttons: PackedScene = preload("res://addons/spawner_tilemap/node/manage_scenes_buttons.tscn")
 var tile_to_scene_editor: PackedScene = preload("res://addons/spawner_tilemap/editor/tile_to_scene_editor.tscn")
 var editor_interface: EditorInterface
+var undo_redo: UndoRedo
 var edit_scenes_button:Button
 var clean_scenes_button:Button
 var spawn_scenes_button:Button
@@ -52,6 +53,7 @@ func _on_scenes_instanced():
 func _show_tile_to_scene_editor():
 	var editor = tile_to_scene_editor.instance()
 	editor.editor_interface = editor_interface
+	editor.undo_redo = undo_redo
 	editor_interface.get_base_control().add_child(editor)
 	editor.popup_centered(editor.rect_min_size)
 	editor.grab_focus()

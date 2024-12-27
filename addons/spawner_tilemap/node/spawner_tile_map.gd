@@ -1,7 +1,9 @@
 tool
 extends TileMap
 class_name SpawnerTileMap, "res://addons/spawner_tilemap/spawner_tile_map.svg"
-# ----------------------- Class Variables -----------------------
+
+# CLASS VARIABLES
+
 # Instance the scenes according to the tiles showed in the tilemap
 # or disable the instancing function (it will work as usual tilemap)
 export (bool) var spawn_scenes_at_start
@@ -17,10 +19,14 @@ onready var container_node = get_node_or_null(container_node_path)
 # already using a similar dictionary format for your project.
 var tile_to_scene_dictionary: Resource setget set_tile_to_scene_dict
 var tile_to_scene_dict_script: GDScript = preload("res://addons/spawner_tilemap/node/tile_to_scene_dictionary.gd")
-# ----------------------- SIGNALS -----------------------
+
+# SIGNALS
+
 signal scenes_instanced
 signal instanced_scenes_cleaned
-	
+
+# METHODS
+
 func _ready() -> void:
 	if not tile_to_scene_dictionary:
 		var new_tile_to_scene_dict = tile_to_scene_dict_script.new()
@@ -73,27 +79,34 @@ func instance_scenes_from_dictionary():
 	if not container_node:
 		printerr("[SpawnerTileMap] There isn't any container node selected to instance the scenes.")
 		return
-	for cell_pos in get_used_cells():
-		var tile_id = get_cell(cell_pos.x,cell_pos.y)
-		# warning-ignore:unsafe_method_access
-		var scene: PackedScene = tile_to_scene_dictionary.get_scene_by_tile_id(tile_id)
-		if scene:
-			var new_scene_instance = scene.instance()
-			new_scene_instance.position = Vector2(cell_pos.x*cell_size.x,cell_pos.y*cell_size.y)
+	var start: int = Time.get_ticks_msec()
+	var _tile_id: int = -1
+	var _scene: PackedScene = null
+	for _cell_pos in get_used_cells():
+		_tile_id = get_cell(_cell_pos.x,_cell_pos.y)
+		_scene = tile_to_scene_dictionary.get_scene_by_tile_id(_tile_id)
+		if _scene:
+			var new_scene_instance: Node = _scene.instance()
+			new_scene_instance.position = Vector2(_cell_pos.x*cell_size.x,_cell_pos.y*cell_size.y)
 			container_node.add_child(new_scene_instance)
 			new_scene_instance.set_owner(get_tree().edited_scene_root)
+			# Add the Spawner instance id to identify which nodes will be freed when the "clean" button is pressed
+			new_scene_instance.set_meta(get_class(),get_instance_id())
 		else:
-			printerr("Tile with id:"+str(tile_id)+" does not have any related scene in the tile to scene dictionary.")
+			printerr("Tile with id:"+str(_tile_id)+" does not have any related scene in the tile to scene dictionary.")
 			return
 	if clean_after_spawning:
 		clear()
 	emit_signal("scenes_instanced")
 	print("[SpawnerTileMap] Scenes instanced successfully.")
+	print("Time: %s"%[(Time.get_ticks_msec()-start)/1000.0])
 
 ## Deletes all child nodes from the container node
 func clean_instanced_scenes():
 	if container_node:
 		for child in container_node.get_children():
+			if child.get_meta("SpawnerTileMap",-1) != get_instance_id():
+				continue
 			child.queue_free()
 		emit_signal("instanced_scenes_cleaned")
 
@@ -101,3 +114,6 @@ func clean_instanced_scenes():
 func set_container_nodepath(new_nodepath:NodePath):
 	container_node = get_node_or_null(new_nodepath)
 	container_node_path = new_nodepath
+
+func get_class() -> String:
+	return "SpawnerTileMap"

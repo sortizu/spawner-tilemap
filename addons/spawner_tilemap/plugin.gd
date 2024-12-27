@@ -11,6 +11,7 @@ func _enter_tree() -> void:
 	# Add EditorInspectorPlugin
 	plugin = preload("res://addons/spawner_tilemap/editor_spawner_tilemap.gd").new()
 	plugin.editor_interface = get_editor_interface()
+	plugin.undo_redo = get_undo_redo()
 	add_inspector_plugin(plugin)
 
 func _exit_tree() -> void:
