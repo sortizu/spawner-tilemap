@@ -24,7 +24,7 @@ func set_dictionary(new_dictionary:Dictionary):
 
 ## Returns the PackedScene related to a tile id
 func get_scene_by_tile_id(id:int)->PackedScene:
-	return dictionary[id]
+	return dictionary.get(id, [])
 
 func get_class():
 	return "TileToSceneDictionary"

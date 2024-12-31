@@ -67,7 +67,6 @@ rect_min_size = Vector2( 0, 25 )
 hint_tooltip = "Deletes all children of the container node."
 focus_mode = 0
 size_flags_horizontal = 3
-disabled = true
 text = "Clean instanced scenes"
 expand_icon = true
 

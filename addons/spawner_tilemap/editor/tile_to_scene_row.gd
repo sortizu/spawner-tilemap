@@ -11,7 +11,7 @@ var scene_meta: Resource
 
 # DEPENDENCIES
 
-var scene_resource_picker: EditorScenePicker
+onready var scene_resource_picker: EditorScenePicker
 
 # CHILD NODES
 
@@ -69,6 +69,9 @@ func _on_edit_meta_pressed():
 
 class EditorScenePicker extends EditorResourcePicker:
 	
+	var undo_redo: UndoRedo
+	var final_scene: PackedScene setget set_final_scene
+	
 	## Custom PackedScene resource picker
 	
 	signal scene_changed(scene)
@@ -84,8 +87,18 @@ class EditorScenePicker extends EditorResourcePicker:
 	
 	func _set(property: String, value) -> bool:
 		if property=="edited_resource":
-			emit_signal("scene_changed",value)
+			set_final_scene(value)
 		return false
 	
+	func set_final_scene(_scene: PackedScene):
+		final_scene = _scene
+		if edited_resource != final_scene:
+			edited_resource = final_scene
+		emit_signal("scene_changed",final_scene)
+	
 	func _on_resource_changed(resource):
-		emit_signal("scene_changed",resource)
+		if undo_redo:
+			undo_redo.create_action("Set scene to tile")
+			undo_redo.add_do_property(self,"final_scene",resource)
+			undo_redo.add_undo_property(self,"final_scene",final_scene)
+			undo_redo.commit_action()

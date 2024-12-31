@@ -48,10 +48,11 @@ func add_row(texture:Texture,tile_region:Rect2,tile_id:int,scene:PackedScene):
 	row.set_texture(atlas_texture)
 	row.set_id(tile_id)
 	row.scene_resource_picker.edited_resource = scene
+	row.scene_resource_picker.undo_redo = undo_redo
+#	print(undo_redo,row.scene_resource_picker.undo_redo)
 	row.edit_meta_button.icon = editor_interface.get_base_control().get_icon("Edit","EditorIcons")
 	row.connect("edit_meta_pressed",self,"on_edit_meta_pressed")
 	row.connect("row_changed",self,"_on_row_changed")
-	
 
 ## Shows all the information inside the [tile_to_scene_dictionary] stored by the SpawnTileMap using rows that are created by [add_row]
 func update_rows():
@@ -76,15 +77,13 @@ func on_edit_meta_pressed(_tile_id: int):
 
 ## Updates the [tile_to_scene_dictionary] when an scene is changed inside a row
 func _on_row_changed(_id: int, _scene: PackedScene) -> void:
-	var tile_to_scene_dictionary = spawner_tilemap.tile_to_scene_dictionary
-	var _scene_data: Array = tile_to_scene_dictionary.dictionary.get(_id,[null,null])
-	if _scene_data.size()==2:
-		_scene_data[0] = _scene
-		tile_to_scene_dictionary.dictionary[_id] = _scene_data
-	else:
-		_scene_data[0] = _scene
-		tile_to_scene_dictionary.dictionary[_id] = _scene_data
-	spawner_tilemap.tile_to_scene_dictionary.set_dictionary(tile_to_scene_dictionary.dictionary)
+	var _dictionary: Dictionary = spawner_tilemap.tile_to_scene_dictionary.dictionary
+	var _scene_data: Array = _dictionary.get(_id,[null,null])
+	var _new_scene_data: Array = [_scene, _scene_data[1]]
+	if not (_new_scene_data[0] or _new_scene_data[1]):
+		_dictionary.erase(_id)
+		return
+	_dictionary[_id] = _new_scene_data
 
 ## Filters the rows based on the tile id and the name of the scene
 func _on_SearchButton_pressed() -> void:
@@ -113,3 +112,6 @@ func _on_child_exited_in_main_container(node: Node):
 	if node.has_signal("row_changed") and node.is_connected("row_changed",self,"_on_row_changed"):
 		node.disconnect("row_changed",self,"_on_row_changed")
 		node.disconnect("edit_meta_pressed",self,"on_edit_meta_pressed")
+
+func _on_WindowDialog_popup_hide():
+	queue_free()

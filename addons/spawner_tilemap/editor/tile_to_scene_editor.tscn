@@ -11,7 +11,6 @@ border_width_bottom = 1
 border_color = Color( 0.113725, 0.133333, 0.176471, 1 )
 
 [node name="WindowDialog" type="WindowDialog"]
-visible = true
 margin_right = 475.0
 margin_bottom = 500.0
 rect_min_size = Vector2( 475, 500 )
@@ -79,5 +78,6 @@ size_flags_horizontal = 3
 size_flags_vertical = 3
 custom_constants/separation = 15
 
+[connection signal="popup_hide" from="." to="." method="_on_WindowDialog_popup_hide"]
 [connection signal="pressed" from="MarginContainer/VBoxContainer/SearchButtons/ClearButton" to="." method="_on_ClearButton_pressed"]
 [connection signal="pressed" from="MarginContainer/VBoxContainer/SearchButtons/SearchButton" to="." method="_on_SearchButton_pressed"]
