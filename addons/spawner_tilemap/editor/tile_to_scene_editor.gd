@@ -52,6 +52,7 @@ func add_row(texture:Texture,tile_region:Rect2,tile_id:int,scene:PackedScene):
 #	print(undo_redo,row.scene_resource_picker.undo_redo)
 	row.edit_meta_button.icon = editor_interface.get_base_control().get_icon("Edit","EditorIcons")
 	row.connect("edit_meta_pressed",self,"on_edit_meta_pressed")
+	row.scene_resource_picker.connect("show_in_filesystem_selected",self,"queue_free")
 	row.connect("row_changed",self,"_on_row_changed")
 
 ## Shows all the information inside the [tile_to_scene_dictionary] stored by the SpawnTileMap using rows that are created by [add_row]

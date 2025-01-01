@@ -57,6 +57,7 @@ func set_scene_name(new_scene_name: String):
 		scene_name_label.set("custom_colors/font_color",Color.white)
 
 func _on_scene_changed(scene:PackedScene):
+	print("Hola")
 	if scene:
 		scene_path = scene.resource_path
 		set_scene_name(scene_path.get_file())
@@ -69,12 +70,18 @@ func _on_edit_meta_pressed():
 
 class EditorScenePicker extends EditorResourcePicker:
 	
-	var undo_redo: UndoRedo
-	var final_scene: PackedScene setget set_final_scene
-	
 	## Custom PackedScene resource picker
 	
+	var undo_redo: UndoRedo
+	var final_scene: PackedScene setget set_final_scene
+	var _popup_menu: PopupMenu
+	
+	## SIGNALS
+	
 	signal scene_changed(scene)
+	signal show_in_filesystem_selected
+	
+	## METHODS
 	
 	func _init() -> void:
 		base_type = "PackedScene"
@@ -82,8 +89,26 @@ class EditorScenePicker extends EditorResourcePicker:
 		toggle_mode=false
 		connect("resource_changed",self,"_on_resource_changed")
 	
-	func set_create_options(menu_node: Object) -> void:
-		pass
+	func _notification(what):
+		if what == NOTIFICATION_PREDELETE:
+			if is_connected("resource_changed",self,"_on_resource_changed"):
+				disconnect("resource_changed",self,"_on_resource_changed")
+	
+	func set_create_options(menu_node):
+		if final_scene:
+			_popup_menu = menu_node as PopupMenu
+			if _popup_menu.is_connected("index_pressed",self,"id_pressed"):
+				return
+			_popup_menu.connect("index_pressed",self,"id_pressed")
+	
+	func id_pressed(_index: int):
+		if not is_instance_valid(_popup_menu):
+			return
+		if not edited_resource or edited_resource.resource_path.empty():
+			return
+		if _index != 7:
+			return
+		emit_signal("show_in_filesystem_selected")
 	
 	func _set(property: String, value) -> bool:
 		if property=="edited_resource":
