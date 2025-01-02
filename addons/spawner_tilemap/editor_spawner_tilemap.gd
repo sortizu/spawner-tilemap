@@ -36,10 +36,8 @@ func parse_property(object: Object, type: int, path: String, hint: int, hint_tex
 func _on_spawn_scenes_pressed(buttons, spawner_tilemap: SpawnerTileMap):
 	var _state: Dictionary = spawner_tilemap._get_state()
 	var _instanced_scenes: Array = spawner_tilemap.instance_scenes_from_dictionary()
-	if not _instanced_scenes.empty():
-		buttons.enable_clean_button()
 	undo_redo.create_action("Spawn scenes")
-	undo_redo.add_do_method(spawner_tilemap, "add_instanced_scenes", _instanced_scenes)
+	undo_redo.add_do_method(spawner_tilemap, "_add_instanced_scenes", _instanced_scenes)
 	for _scene in _instanced_scenes:
 		undo_redo.add_do_reference(_scene)
 	undo_redo.add_undo_method(spawner_tilemap, "clean_instanced_scenes", _instanced_scenes, false)

@@ -7,10 +7,11 @@ extends WindowDialog
 # DEPENDENCIES
 
 var tile_to_scene_row: PackedScene = preload("res://addons/spawner_tilemap/editor/tile_to_scene_row.tscn")
-var scene_meta: GDScript = preload("res://addons/spawner_tilemap/node/scene_meta.gd")
+var scene_settings: GDScript = preload("res://addons/spawner_tilemap/node/scene_settings.gd")
 var editor_interface: EditorInterface
 var spawner_tilemap: SpawnerTileMap
 var undo_redo: UndoRedo
+
 # CHILD NODES
 
 onready var main_container: VBoxContainer = $MarginContainer/VBoxContainer/ScrollContainer/MainContainer
@@ -50,8 +51,8 @@ func add_row(texture:Texture,tile_region:Rect2,tile_id:int,scene:PackedScene):
 	row.scene_resource_picker.edited_resource = scene
 	row.scene_resource_picker.undo_redo = undo_redo
 #	print(undo_redo,row.scene_resource_picker.undo_redo)
-	row.edit_meta_button.icon = editor_interface.get_base_control().get_icon("Edit","EditorIcons")
-	row.connect("edit_meta_pressed",self,"on_edit_meta_pressed")
+	row.scene_settings_button.icon = editor_interface.get_base_control().get_icon("TripleBar","EditorIcons")
+	row.connect("scene_settings_pressed",self,"on_scene_settings_pressed")
 	row.scene_resource_picker.connect("show_in_filesystem_selected",self,"queue_free")
 	row.connect("row_changed",self,"_on_row_changed")
 
@@ -64,16 +65,16 @@ func update_rows():
 			var _scene_data: Array = tile_to_scene_dictionary.dictionary.get(tile_id,[null,null])
 			add_row(tile_set.tile_get_texture(tile_id),tile_set.tile_get_region(tile_id),tile_id,_scene_data[0])
 
-func on_edit_meta_pressed(_tile_id: int):
+## Creates a custom resource to add data to each scene and to customize their spawning process
+func on_scene_settings_pressed(_tile_id: int):
 	var tile_to_scene_dictionary = spawner_tilemap.tile_to_scene_dictionary
 	var _scene_data: Array = tile_to_scene_dictionary.dictionary.get(_tile_id,[null,null])
-	var _scene_meta: Resource = _scene_data[1]
-	if not _scene_meta:
-		_scene_meta = scene_meta.new()
-		_scene_data[1] = _scene_meta
+	var _scene_settings: Resource = _scene_data[1]
+	if not _scene_settings:
+		_scene_settings = scene_settings.new()
+		_scene_data[1] = _scene_settings
 		tile_to_scene_dictionary.dictionary[_tile_id] = _scene_data
-	#editor_interface.inspect_object(_scene_meta,"metadata")
-	editor_interface.edit_resource(_scene_meta)
+	editor_interface.edit_resource(_scene_settings)
 	queue_free()
 
 ## Updates the [tile_to_scene_dictionary] when an scene is changed inside a row
@@ -112,7 +113,7 @@ func _unhandled_key_input(event: InputEventKey) -> void:
 func _on_child_exited_in_main_container(node: Node):
 	if node.has_signal("row_changed") and node.is_connected("row_changed",self,"_on_row_changed"):
 		node.disconnect("row_changed",self,"_on_row_changed")
-		node.disconnect("edit_meta_pressed",self,"on_edit_meta_pressed")
+		node.disconnect("scene_settings_pressed",self,"on_scene_settings_pressed")
 
 func _on_WindowDialog_popup_hide():
 	queue_free()

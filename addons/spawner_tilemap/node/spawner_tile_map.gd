@@ -22,6 +22,7 @@ onready var container_node = get_node_or_null(container_node_path)
 # ADVICE: Set this variable manually if you are already using a similar dictionary format for your project.
 var tile_to_scene_dictionary: Resource setget set_tile_to_scene_dict
 var tile_to_scene_dict_script: GDScript = preload("res://addons/spawner_tilemap/node/tile_to_scene_dictionary.gd")
+const scene_settings: GDScript = preload("res://addons/spawner_tilemap/node/scene_settings.gd")
 
 var _tile_count: int = 0
 
@@ -89,36 +90,72 @@ func instance_scenes_from_dictionary() -> Array:
 	if not container_node:
 		printerr("[SpawnerTileMap] There isn't any container node selected to instance the scenes.")
 		return []
-#	var start: int = Time.get_ticks_msec()
+#	var start: int = Time.get_ticks_usec()
 	var _tile_id: int = -1
+	var new_scene_instance: Node
 	var _scene_data: Array
+	var _packed_scene: PackedScene
+	var _scene_settings: scene_settings
 	var _instanced_scenes: Array
+	var _target: Node
+	var _params: Dictionary
 	for _cell_pos in get_used_cells():
 		_tile_id = get_cell(_cell_pos.x,_cell_pos.y)
 		_scene_data = tile_to_scene_dictionary.get_scene_by_tile_id(_tile_id)
 		if not _scene_data.empty():
-			var new_scene_instance: Node = _scene_data[0].instance()
-			new_scene_instance.position = Vector2(_cell_pos.x*cell_size.x,_cell_pos.y*cell_size.y)
-#			container_node.add_child(new_scene_instance)
-#			new_scene_instance.set_owner(get_tree().edited_scene_root)
-			# Add the Spawner instance id to identify which nodes will be freed when the "clean" button is pressed
-			new_scene_instance.set_meta(get_class(),get_instance_id())
-			_instanced_scenes.append(new_scene_instance)
+			_packed_scene = _scene_data[0]
+			_scene_settings = _scene_data[1]
+			new_scene_instance = null
+			if not _packed_scene or (_scene_settings and _scene_settings.instance_mode == 0):
+				continue
+			else:
+				if _scene_settings and _scene_settings.instance_mode == 1 and _packed_scene.has_meta("SingleInstance"):
+					new_scene_instance = _packed_scene.get_meta("SingleInstance")
+				if not new_scene_instance:
+					new_scene_instance = _scene_data[0].instance()
+					new_scene_instance.position = Vector2(_cell_pos.x*cell_size.x,_cell_pos.y*cell_size.y)
+					container_node.add_child(new_scene_instance)
+					new_scene_instance.set_owner(get_tree().edited_scene_root)
+					# Add the Spawner instance id to identify which nodes will be freed when the "clean" button is pressed
+					new_scene_instance.set_meta(get_class(),get_instance_id())
+					_instanced_scenes.append(new_scene_instance)
+				if _scene_settings and _scene_settings.instance_mode == 1:
+					_packed_scene.set_meta("SingleInstance",new_scene_instance)
+			# Calling method after spawn
+			if not _scene_settings: continue
+			if _scene_settings.method_name.empty(): continue
+			if _scene_settings.path_to_target.empty(): _target = new_scene_instance
+			else: _target = new_scene_instance.get_node_or_null(_scene_settings.path_to_target)
+			if not _target:
+				printerr("[SpawnerTileMap] Can't find target node '%s' (tile-id %s)"%[_scene_settings.path_to_target,_tile_id])
+				continue
+			if not _target.has_method(_scene_settings.method_name): 
+				printerr("[SpawnerTileMap] Can't find method with name '%s' in target node (tile-id %s)"%[_scene_settings.method_name,_tile_id])
+				continue
+			if _scene_settings.default_parameters & 001: # If Tile Position is set true as parameter
+				_params["tile_position"] = _cell_pos
+			if _scene_settings.default_parameters & 010: # If Tile ID is set true as parameter
+				_params["tile_id"] = _tile_id
+			if _scene_settings.default_parameters & 100: # If metadata is set true as parameter
+				_params["metadata"] = _scene_settings.metadata
+			_target.call(_scene_settings.method_name,_params)
 		else:
 			printerr("Tile with id:"+str(_tile_id)+" does not have any related scene in the tile to scene dictionary.")
 			return []
 	if clean_after_spawning:
 		clear()
-	return _instanced_scenes
-#	emit_signal("scenes_instanced")
+	emit_signal("scenes_instanced")
 #	print("[SpawnerTileMap] Scenes instanced successfully.")
-#	print("Time: %s"%[(Time.get_ticks_msec()-start)/1000.0])
+#	print("Time: %s"%[(Time.get_ticks_usec()-start)/1000000.0])
+	return _instanced_scenes
 
 ## Adds the scenes instanced by [instance_scenes_from_dictionary] as children of the [container_node]
-func add_instanced_scenes(nodes: Array):
+func _add_instanced_scenes(nodes: Array):
 	for node in nodes:
 		if not is_instance_valid(node):
 			continue
+		if node.is_inside_tree():
+			return
 		node = node as Node
 		container_node.add_child(node)
 		node.set_owner(get_tree().edited_scene_root)

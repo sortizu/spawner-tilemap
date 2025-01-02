@@ -7,7 +7,6 @@ extends MarginContainer
 
 var scene_path: String
 var tile_id: int
-var scene_meta: Resource
 
 # DEPENDENCIES
 
@@ -19,13 +18,12 @@ onready var id_value_label: Label = $HBoxContainer/MarginContainer/Information/H
 onready var scene_name_label = $HBoxContainer/MarginContainer/Information/HBoxContainer2/SceneNameLabel
 onready var resource: Control = $HBoxContainer/MarginContainer/Resource
 onready var tile_texture: TextureRect = $HBoxContainer/TileTexture
-onready var edit_meta_button: Button = $HBoxContainer/MarginContainer/Information/HBoxContainer2/EditMeta
-
+onready var scene_settings_button = $HBoxContainer/MarginContainer/Information/HBoxContainer2/SceneSettingsButton
 
 # SIGNALS
 
 signal row_changed(id,scene)
-signal edit_meta_pressed(id)
+signal scene_settings_pressed(id)
 
 # METHODS
 
@@ -33,12 +31,12 @@ func _ready() -> void:
 	scene_resource_picker = EditorScenePicker.new()
 	resource.add_child(scene_resource_picker)
 	scene_resource_picker.connect("scene_changed",self,"_on_scene_changed")
-	edit_meta_button.connect("pressed",self,"_on_edit_meta_pressed")
+	scene_settings_button.connect("pressed",self,"_on_scene_settings_pressed")
 
 func _notification(what):
 	if what  == NOTIFICATION_EXIT_TREE:
 		scene_resource_picker.disconnect("scene_changed",self,"_on_scene_changed")
-		edit_meta_button.disconnect("pressed",self,"_on_edit_meta_pressed")
+		scene_settings_button.disconnect("pressed",self,"_on_scene_settings_pressed")
 
 func set_texture(new_texture:AtlasTexture):
 	tile_texture.texture = new_texture
@@ -57,7 +55,6 @@ func set_scene_name(new_scene_name: String):
 		scene_name_label.set("custom_colors/font_color",Color.white)
 
 func _on_scene_changed(scene:PackedScene):
-	print("Hola")
 	if scene:
 		scene_path = scene.resource_path
 		set_scene_name(scene_path.get_file())
@@ -65,8 +62,8 @@ func _on_scene_changed(scene:PackedScene):
 		set_scene_name("")
 	emit_signal("row_changed",tile_id,scene)
 
-func _on_edit_meta_pressed():
-	emit_signal("edit_meta_pressed",tile_id)
+func _on_scene_settings_pressed():
+	emit_signal("scene_settings_pressed",tile_id)
 
 class EditorScenePicker extends EditorResourcePicker:
 	
