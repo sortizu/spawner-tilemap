@@ -2,7 +2,7 @@ tool
 extends WindowDialog
 
 ## Dialog that appears when the user presses "Edit Scenes" in a SpawnerTileMap
-## It facilitates the process of matching a tile inside a TileMap with a PackedScene using a visual format and specialised UI elements
+## It facilitates the process of matching a tile inside a TileMap with a PackedScene using an specialised GUI
 
 # DEPENDENCIES
 
@@ -38,19 +38,18 @@ func _notification(what: int):
 		main_container.disconnect("child_exiting_tree",self,"_on_child_exited_in_main_container")
 
 ## Adds a row to the main container, which contains the image of the tile, the name of the scene and a PackedScene resource picker
-func add_row(texture:Texture,tile_region:Rect2,tile_id:int,scene:PackedScene):
+func add_row(texture: Texture, region: Rect2, tile_id: int, dict_id: String, scene: PackedScene, tile_mode: int):
 	var row = tile_to_scene_row.instance()
-	# Setting atlas texture to get an accurate previsualization of the tile
-	var atlas_texture: AtlasTexture = AtlasTexture.new()
-	atlas_texture.atlas = texture
-	atlas_texture.region = tile_region
+	var _atlas_texture: AtlasTexture  = AtlasTexture.new()
+	_atlas_texture.atlas = texture
+	_atlas_texture.region = region
 	# Setting the new values to the row
 	main_container.add_child(row)
-	row.set_texture(atlas_texture)
-	row.set_id(tile_id)
+	row.set_tilemode(tile_mode)
+	row.set_texture(_atlas_texture)
+	row.set_id(tile_id, dict_id)
 	row.scene_resource_picker.edited_resource = scene
 	row.scene_resource_picker.undo_redo = undo_redo
-#	print(undo_redo,row.scene_resource_picker.undo_redo)
 	row.scene_settings_button.icon = editor_interface.get_base_control().get_icon("TripleBar","EditorIcons")
 	row.connect("scene_settings_pressed",self,"on_scene_settings_pressed")
 	row.scene_resource_picker.connect("show_in_filesystem_selected",self,"queue_free")
@@ -59,33 +58,52 @@ func add_row(texture:Texture,tile_region:Rect2,tile_id:int,scene:PackedScene):
 ## Shows all the information inside the [tile_to_scene_dictionary] stored by the SpawnTileMap using rows that are created by [add_row]
 func update_rows():
 	var tile_set: TileSet = spawner_tilemap.tile_set
-	var tile_to_scene_dictionary = spawner_tilemap.tile_to_scene_dictionary
 	if tile_set:
+		var tile_to_scene_dictionary = spawner_tilemap.tile_to_scene_dictionary
+		var _tile_mode: int
+		var _scene_data: Array
+		var _texture: Texture
+		var _region: Rect2
 		for tile_id in tile_set.get_tiles_ids():
-			var _scene_data: Array = tile_to_scene_dictionary.dictionary.get(tile_id,[null,null])
-			add_row(tile_set.tile_get_texture(tile_id),tile_set.tile_get_region(tile_id),tile_id,_scene_data[0])
+			_tile_mode = spawner_tilemap.tile_set.tile_get_tile_mode(tile_id)
+			_texture = tile_set.tile_get_texture(tile_id)
+			_region = tile_set.tile_get_region(tile_id)
+			if _tile_mode == TileSet.AUTO_TILE or _tile_mode == TileSet.ATLAS_TILE:
+				var _subtile_size: Vector2 = tile_set.autotile_get_size(tile_id)
+				var icount: int = _region.size.x/_subtile_size.x
+				var dict_id: String
+				for j in _region.size.y/_subtile_size.y:
+					for i in icount:
+						dict_id = "%d-%d-%d"%[tile_id,i,j]
+						_scene_data = tile_to_scene_dictionary.dictionary.get(dict_id,[null,null])
+						add_row(_texture,Rect2(i*_subtile_size.x,j*_subtile_size.y,_subtile_size.x,_subtile_size.y), tile_id, dict_id,_scene_data[0],_tile_mode)
+			else:
+				_scene_data = tile_to_scene_dictionary.dictionary.get(str(tile_id),[null,null])
+				add_row(_texture, _region, tile_id, str(tile_id), _scene_data[0], _tile_mode)
 
 ## Creates a custom resource to add data to each scene and to customize their spawning process
-func on_scene_settings_pressed(_tile_id: int):
+func on_scene_settings_pressed(_tile_id: int, _dict_id: String, _texture: Texture):
 	var tile_to_scene_dictionary = spawner_tilemap.tile_to_scene_dictionary
-	var _scene_data: Array = tile_to_scene_dictionary.dictionary.get(_tile_id,[null,null])
+	var _scene_data: Array = tile_to_scene_dictionary.dictionary.get(_dict_id,[null,null])
 	var _scene_settings: Resource = _scene_data[1]
 	if not _scene_settings:
 		_scene_settings = scene_settings.new()
+		_scene_settings.tile_mode = spawner_tilemap.tile_set.tile_get_tile_mode(_tile_id)
+		_scene_settings.set_tile(_texture)
 		_scene_data[1] = _scene_settings
-		tile_to_scene_dictionary.dictionary[_tile_id] = _scene_data
+		tile_to_scene_dictionary.dictionary[_dict_id] = _scene_data
 	editor_interface.edit_resource(_scene_settings)
 	queue_free()
 
 ## Updates the [tile_to_scene_dictionary] when an scene is changed inside a row
-func _on_row_changed(_id: int, _scene: PackedScene) -> void:
+func _on_row_changed(_tile_id: int, _dict_id: String, _scene: PackedScene) -> void:
 	var _dictionary: Dictionary = spawner_tilemap.tile_to_scene_dictionary.dictionary
-	var _scene_data: Array = _dictionary.get(_id,[null,null])
+	var _scene_data: Array = _dictionary.get(_dict_id,[null,null])
 	var _new_scene_data: Array = [_scene, _scene_data[1]]
 	if not (_new_scene_data[0] or _new_scene_data[1]):
-		_dictionary.erase(_id)
+		_dictionary.erase(_dict_id)
 		return
-	_dictionary[_id] = _new_scene_data
+	_dictionary[_dict_id] = _new_scene_data
 
 ## Filters the rows based on the tile id and the name of the scene
 func _on_SearchButton_pressed() -> void:

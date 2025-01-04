@@ -20,8 +20,8 @@ onready var container_node = get_node_or_null(container_node_path)
 # This variable is created automatically and modified by the TileToSceneEditor
 # It stores each tile id as a key and a PackedScene as the value for each id.
 # ADVICE: Set this variable manually if you are already using a similar dictionary format for your project.
-var tile_to_scene_dictionary: Resource setget set_tile_to_scene_dict
-var tile_to_scene_dict_script: GDScript = preload("res://addons/spawner_tilemap/node/tile_to_scene_dictionary.gd")
+const TileToSceneDictionary: GDScript = preload("res://addons/spawner_tilemap/node/tile_to_scene_dictionary.gd")
+var tile_to_scene_dictionary: TileToSceneDictionary setget set_tile_to_scene_dict
 const scene_settings: GDScript = preload("res://addons/spawner_tilemap/node/scene_settings.gd")
 
 var _tile_count: int = 0
@@ -35,7 +35,7 @@ signal instanced_scenes_cleaned
 
 func _ready() -> void:
 	if not tile_to_scene_dictionary:
-		var new_tile_to_scene_dict = tile_to_scene_dict_script.new()
+		var new_tile_to_scene_dict = TileToSceneDictionary.new()
 		# warning-ignore:unsafe_property_access
 		new_tile_to_scene_dict.loaded_dictionary=true
 		set_tile_to_scene_dict(new_tile_to_scene_dict)
@@ -79,7 +79,7 @@ func _get_property_list() -> Array:
 	return properties
 
 ## Set function for custom resource that contains the dictionary of tiles and scenes
-func set_tile_to_scene_dict(new_dict: Resource):
+func set_tile_to_scene_dict(new_dict: TileToSceneDictionary):
 	if not (not new_dict or new_dict.get_class() == "TileToSceneDictionary"):
 		printerr("[SpawnerTileMap] Resource set in tile_to_scene_dictionary is not a TileToSceneDictionary type.")
 	else:
@@ -100,8 +100,13 @@ func instance_scenes_from_dictionary() -> Array:
 	var _target: Node
 	var _params: Dictionary
 	for _cell_pos in get_used_cells():
+		_cell_pos = _cell_pos as Vector2
 		_tile_id = get_cell(_cell_pos.x,_cell_pos.y)
-		_scene_data = tile_to_scene_dictionary.get_scene_by_tile_id(_tile_id)
+		if tile_set.tile_get_tile_mode(_tile_id) == TileSet.SINGLE_TILE:
+			_scene_data = tile_to_scene_dictionary.get_scene_by_tile_id(str(_tile_id))
+		else:
+			var subtile_coord: Vector2 = get_cell_autotile_coord(_cell_pos.x,_cell_pos.y)
+			_scene_data = tile_to_scene_dictionary.get_scene_by_tile_id(str(_tile_id)+"-"+str(subtile_coord.x)+"-"+str(subtile_coord.y))
 		if not _scene_data.empty():
 			_packed_scene = _scene_data[0]
 			_scene_settings = _scene_data[1]
@@ -136,6 +141,8 @@ func instance_scenes_from_dictionary() -> Array:
 				_params["tile_position"] = _cell_pos
 			if _scene_settings.default_parameters & 010: # If Tile ID is set true as parameter
 				_params["tile_id"] = _tile_id
+			if _scene_settings.default_parameters & 1000: # If metadata is set true as parameter
+				_params["subtile_coordinates"] = _scene_settings.subtile_coord
 			if _scene_settings.default_parameters & 100: # If metadata is set true as parameter
 				_params["metadata"] = _scene_settings.metadata
 			_target.call(_scene_settings.method_name,_params)
