@@ -6,6 +6,10 @@ var manage_scenes_buttons: PackedScene = preload("res://addons/spawner_tilemap/n
 var tile_to_scene_editor: PackedScene = preload("res://addons/spawner_tilemap/editor/tile_to_scene_editor.tscn")
 var editor_interface: EditorInterface
 var undo_redo: UndoRedo
+var buttons: Control
+var edit_scenes_button: Button
+var clean_scenes_button: Button
+var spawn_scenes_button: Button
 
 # METHODS
 
@@ -16,11 +20,12 @@ func parse_property(object: Object, type: int, path: String, hint: int, hint_tex
 	var selected_nodes: Array = editor_interface.get_selection().get_selected_nodes()
 	if selected_nodes.size()>0 and path == "_manage_buttons":
 		var spawner_tilemap: SpawnerTileMap = selected_nodes[0]
-		var buttons = manage_scenes_buttons.instance()
+		buttons = manage_scenes_buttons.instance()
+		buttons.connect("tree_exiting",self,"_on_buttons_removed")
 		add_custom_control(buttons)
-		var edit_scenes_button: Button = buttons.get_node(buttons.edit_scenes_button_path)
-		var clean_scenes_button: Button = buttons.get_node(buttons.clean_scenes_button_path)
-		var spawn_scenes_button: Button = buttons.get_node(buttons.spawn_scenes_button_path)
+		edit_scenes_button = buttons.get_node(buttons.edit_scenes_button_path)
+		clean_scenes_button = buttons.get_node(buttons.clean_scenes_button_path)
+		spawn_scenes_button = buttons.get_node(buttons.spawn_scenes_button_path)
 		# Customizing and connecting signals from manage scene buttons
 		clean_scenes_button.icon = editor_interface.get_base_control().get_icon("Clear","EditorIcons")
 		if not clean_scenes_button.is_connected("pressed",self,"_on_clean_scenes_pressed"):
@@ -61,3 +66,12 @@ func _show_tile_to_scene_editor(spawner_tilemap: SpawnerTileMap):
 	editor_interface.get_base_control().add_child(editor)
 	editor.popup_centered(editor.rect_min_size)
 	editor.grab_focus()
+
+func _on_buttons_removed():
+	if clean_scenes_button and clean_scenes_button.is_connected("pressed",self,"_on_clean_scenes_pressed"):
+		clean_scenes_button.disconnect("pressed",self,"_on_clean_scenes_pressed")
+	if edit_scenes_button and edit_scenes_button.is_connected("pressed",self,"_show_tile_to_scene_editor"):
+		edit_scenes_button.disconnect("pressed",self,"_show_tile_to_scene_editor")
+	if spawn_scenes_button and spawn_scenes_button.is_connected("pressed",self,"_on_spawn_scenes_pressed"):
+		spawn_scenes_button.disconnect("pressed",self,"_on_spawn_scenes_pressed")
+	buttons.disconnect("tree_exiting",self,"_on_buttons_removed")
