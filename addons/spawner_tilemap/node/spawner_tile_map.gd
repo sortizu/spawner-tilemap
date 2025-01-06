@@ -11,7 +11,7 @@ class_name SpawnerTileMap, "res://addons/spawner_tilemap/spawner_tile_map.svg"
 # Instance the scenes according to the tiles showed in the tilemap
 # or disable the instancing function (it will work as usual tilemap)
 export (bool) var spawn_scenes_at_start
-# Clean the tilemap after instancing the scenes
+# Clean all the cells from the tilemap after instancing the scenes, it doesn't consider specific scene settings for each tile
 export (bool) var clean_after_spawning
 # Path of the node to store all the scenes instances setted on tile_to_scene_dictionary
 export (NodePath) var container_node_path: NodePath setget set_container_nodepath
@@ -126,6 +126,8 @@ func instance_scenes_from_dictionary() -> Array:
 					_instanced_scenes.append(new_scene_instance)
 				if _scene_settings and _scene_settings.instance_mode == 1:
 					_packed_scene.set_meta("SingleInstance",new_scene_instance)
+				if _scene_settings and _scene_settings.clean_tile:
+					set_cellv(_cell_pos,-1)
 			# Calling method after spawn
 			if not _scene_settings: continue
 			if _scene_settings.method_name.empty(): continue
@@ -177,7 +179,7 @@ func _get_state() -> Dictionary:
 		var _tile_data: Array = _state.get(_id,[])
 		if _tile_data.empty():
 			_state[_id] = _tile_data
-		_tile_data.append([_pos,is_cell_x_flipped(_pos.x,_pos.y),is_cell_y_flipped(_pos.x,_pos.y),is_cell_transposed(_pos.x,_pos.y)])
+		_tile_data.append([_pos,is_cell_x_flipped(_pos.x,_pos.y),is_cell_y_flipped(_pos.x,_pos.y),is_cell_transposed(_pos.x,_pos.y),get_cell_autotile_coord(_pos.x,_pos.y)])
 	return _state
 
 ## Restores all the cells saved in a previous state which is contained in the [_tile_dict]
@@ -189,7 +191,7 @@ func _restore_state(_state: Dictionary):
 			continue
 		_tile_data_array = _state[_id]
 		for _tile_data in _tile_data_array:
-			set_cellv(_tile_data[0], _id, _tile_data[1], _tile_data[2], _tile_data[3])
+			set_cellv(_tile_data[0], _id, _tile_data[1], _tile_data[2], _tile_data[3],_tile_data[4])
 
 ## Deletes all scenes in [_instances] array
 ## When [free_instances] is false, the scenes will only be removed from the tree, but not freed from memory

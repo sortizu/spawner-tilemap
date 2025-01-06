@@ -9,6 +9,7 @@ var scene_path: String
 var tile_id: int
 var dict_id: String
 var tile_mode: int
+var coord: Vector2
 
 # CONSTANTS
 
@@ -89,7 +90,7 @@ func _on_scene_changed(scene:PackedScene):
 	emit_signal("row_changed", tile_id, dict_id, scene)
 
 func _on_scene_settings_pressed():
-	emit_signal("scene_settings_pressed",tile_id, dict_id, tile_texture.texture)
+	emit_signal("scene_settings_pressed",tile_id, dict_id, coord, tile_texture.texture)
 
 class EditorScenePicker extends EditorResourcePicker:
 	

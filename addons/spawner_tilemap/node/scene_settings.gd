@@ -1,16 +1,22 @@
 tool
 extends Resource
 
+## Stores custom value for each PackedScene inside a [tile_to_scene_dictionary]
+
+# TILE DATA
+
 var tile_mode: int
 var tile: Texture setget set_tile
 var subtile_coord: Vector2
 
-## Stores custom value for each PackedScene inside a [tile_to_scene_dictionary]
+# SCENE SETTINGS
+
 var metadata: Dictionary
 var instance_mode: int = 2
 var default_parameters: int
 var path_to_target: String
 var method_name: String
+var clean_tile: bool
 
 func _get_property_list():
 	var properties: Array = []
@@ -36,6 +42,11 @@ func _get_property_list():
 	properties.append({
 		name="metadata",
 		type=TYPE_DICTIONARY,
+		usage = PROPERTY_USAGE_DEFAULT,
+	})
+	properties.append({
+		name="clean_tile",
+		type=TYPE_BOOL,
 		usage = PROPERTY_USAGE_DEFAULT,
 	})
 	properties.append({
@@ -66,6 +77,16 @@ func _get_property_list():
 		name="method_name",
 		type=TYPE_STRING,
 		usage = PROPERTY_USAGE_DEFAULT
+	})
+	properties.append({
+		name="subtile_coord",
+		type=TYPE_VECTOR2,
+		usage = PROPERTY_USAGE_NOEDITOR
+	})
+	properties.append({
+		name="tile_mode",
+		type=TYPE_INT,
+		usage = PROPERTY_USAGE_NOEDITOR
 	})
 	return properties
 

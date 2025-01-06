@@ -38,7 +38,7 @@ func _notification(what: int):
 		main_container.disconnect("child_exiting_tree",self,"_on_child_exited_in_main_container")
 
 ## Adds a row to the main container, which contains the image of the tile, the name of the scene and a PackedScene resource picker
-func add_row(texture: Texture, region: Rect2, tile_id: int, dict_id: String, scene: PackedScene, tile_mode: int):
+func add_row(texture: Texture, region: Rect2, tile_id: int, dict_id: String, coord: Vector2, scene: PackedScene, tile_mode: int):
 	var row = tile_to_scene_row.instance()
 	var _atlas_texture: AtlasTexture  = AtlasTexture.new()
 	_atlas_texture.atlas = texture
@@ -48,6 +48,7 @@ func add_row(texture: Texture, region: Rect2, tile_id: int, dict_id: String, sce
 	row.set_tilemode(tile_mode)
 	row.set_texture(_atlas_texture)
 	row.set_id(tile_id, dict_id)
+	row.coord = coord
 	row.scene_resource_picker.edited_resource = scene
 	row.scene_resource_picker.undo_redo = undo_redo
 	row.scene_settings_button.icon = editor_interface.get_base_control().get_icon("TripleBar","EditorIcons")
@@ -76,23 +77,25 @@ func update_rows():
 					for i in icount:
 						dict_id = "%d-%d-%d"%[tile_id,i,j]
 						_scene_data = tile_to_scene_dictionary.dictionary.get(dict_id,[null,null])
-						add_row(_texture,Rect2(i*_subtile_size.x,j*_subtile_size.y,_subtile_size.x,_subtile_size.y), tile_id, dict_id,_scene_data[0],_tile_mode)
+						add_row(_texture,Rect2(i*_subtile_size.x,j*_subtile_size.y,_subtile_size.x,_subtile_size.y), tile_id, dict_id,Vector2(i,j),_scene_data[0],_tile_mode)
 			else:
 				_scene_data = tile_to_scene_dictionary.dictionary.get(str(tile_id),[null,null])
-				add_row(_texture, _region, tile_id, str(tile_id), _scene_data[0], _tile_mode)
+				add_row(_texture, _region, tile_id, str(tile_id), Vector2(0,0), _scene_data[0], _tile_mode)
 
 ## Creates a custom resource to add data to each scene and to customize their spawning process
-func on_scene_settings_pressed(_tile_id: int, _dict_id: String, _texture: Texture):
+func on_scene_settings_pressed(_tile_id: int, _dict_id: String, coord: Vector2, _texture: Texture):
 	var tile_to_scene_dictionary = spawner_tilemap.tile_to_scene_dictionary
 	var _scene_data: Array = tile_to_scene_dictionary.dictionary.get(_dict_id,[null,null])
 	var _scene_settings: Resource = _scene_data[1]
 	if not _scene_settings:
 		_scene_settings = scene_settings.new()
 		_scene_settings.tile_mode = spawner_tilemap.tile_set.tile_get_tile_mode(_tile_id)
-		_scene_settings.set_tile(_texture)
+		_scene_settings.set_tile(_texture) 
+		_scene_settings.subtile_coord = coord
 		_scene_data[1] = _scene_settings
 		tile_to_scene_dictionary.dictionary[_dict_id] = _scene_data
 	editor_interface.edit_resource(_scene_settings)
+	print(_scene_settings.subtile_coord)
 	queue_free()
 
 ## Updates the [tile_to_scene_dictionary] when an scene is changed inside a row
