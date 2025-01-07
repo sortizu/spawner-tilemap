@@ -113,20 +113,20 @@ func instance_scenes_from_dictionary() -> Array:
 			new_scene_instance = null
 			if not _packed_scene or (_scene_settings and _scene_settings.instance_mode == 0):
 				continue
-			else:
-				if _scene_settings and _scene_settings.instance_mode == 1 and _packed_scene.has_meta("SingleInstance"):
-					new_scene_instance = _packed_scene.get_meta("SingleInstance")
-				if not new_scene_instance:
-					new_scene_instance = _scene_data[0].instance()
-					new_scene_instance.position = Vector2(_cell_pos.x*cell_size.x,_cell_pos.y*cell_size.y)
-					container_node.add_child(new_scene_instance)
-					new_scene_instance.set_owner(get_tree().edited_scene_root)
-					# Add the Spawner instance id to identify which nodes will be freed when the "clean" button is pressed
-					new_scene_instance.set_meta(get_class(),get_instance_id())
-					_instanced_scenes.append(new_scene_instance)
-				if _scene_settings and _scene_settings.instance_mode == 1:
+			if _scene_settings and _scene_settings.instance_mode == 1 and _packed_scene.has_meta("SingleInstance"):
+				new_scene_instance = _packed_scene.get_meta("SingleInstance")
+			if not (new_scene_instance and is_instance_valid(new_scene_instance)):
+				new_scene_instance = _scene_data[0].instance()
+				new_scene_instance.position = Vector2(_cell_pos.x*cell_size.x,_cell_pos.y*cell_size.y)
+				container_node.add_child(new_scene_instance)
+				new_scene_instance.set_owner(get_tree().edited_scene_root)
+				# Add the Spawner instance id to identify which nodes will be freed when the "clean" button is pressed
+				new_scene_instance.set_meta(get_class(),get_instance_id())
+				_instanced_scenes.append(new_scene_instance)
+			if _scene_settings:
+				if _scene_settings.instance_mode == 1:
 					_packed_scene.set_meta("SingleInstance",new_scene_instance)
-				if _scene_settings and _scene_settings.clean_tile:
+				if _scene_settings.clean_tile:
 					set_cellv(_cell_pos,-1)
 			# Calling method after spawn
 			if not _scene_settings: continue
