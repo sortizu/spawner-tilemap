@@ -55,7 +55,7 @@ func _on_clean_scenes_pressed(buttons, spawner_tilemap: SpawnerTileMap):
 	undo_redo.add_do_method(spawner_tilemap, "clean_instanced_scenes", _instanced_scenes, false)
 	for _scene in _instanced_scenes:
 		undo_redo.add_undo_reference(_scene)
-	undo_redo.add_undo_method(spawner_tilemap, "add_instanced_scenes", _instanced_scenes)
+	undo_redo.add_undo_method(spawner_tilemap, "_add_instanced_scenes", _instanced_scenes)
 	undo_redo.commit_action()
 
 func _show_tile_to_scene_editor(spawner_tilemap: SpawnerTileMap):
