@@ -26,7 +26,6 @@ onready var next_page_button = $MarginContainer/VBoxContainer/VBoxContainer/Next
 
 # VARIABLES
 
-var start
 var current_page: int = 1
 var total_pages: int = -1
 var _search_text: String = "*"
@@ -106,8 +105,6 @@ func set_row_data(_row_index: int,texture: Texture, region: Rect2, tile_id: int,
 
 ## Shows all the information inside the [tile_to_scene_dictionary] stored by the SpawnTileMap using rows that are created by [set_row_data]
 func show_rows_in_page(_selected_page: int, _search_text: String = "*", _filter_option: int = -1, update_total_pages: bool = false, ignore_filters: bool = true):
-	start = Time.get_ticks_usec()
-	print("memory: ", OS.get_static_memory_usage()/1048576.0)
 	var tile_set: TileSet = spawner_tilemap.tile_set
 	if tile_set:
 		for _row in main_container.get_children():
@@ -194,8 +191,6 @@ func show_rows_in_page(_selected_page: int, _search_text: String = "*", _filter_
 			else:
 				set_total_pages(_page_count)
 	set_current_page(_selected_page)
-	print("memory: ",OS.get_static_memory_usage()/1048576.0)
-	print("time: ",(Time.get_ticks_usec()-start)/1000000.0)
 
 ## Creates a custom resource to add data to each scene and to customize their spawning process
 func on_scene_settings_pressed(_tile_id: int, _dict_id: String, coord: Vector2, _texture: Texture):

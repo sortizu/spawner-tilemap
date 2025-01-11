@@ -110,14 +110,18 @@ func instance_scenes_from_dictionary() -> Array:
 		if not _scene_data.empty():
 			_packed_scene = _scene_data[0]
 			_scene_settings = _scene_data[1]
+		if _scene_settings and _scene_settings.instance_mode == 0:
+			continue
+		if _packed_scene:
 			new_scene_instance = null
-			if not _packed_scene or (_scene_settings and _scene_settings.instance_mode == 0):
-				continue
 			if _scene_settings and _scene_settings.instance_mode == 1 and _packed_scene.has_meta("SingleInstance"):
 				new_scene_instance = _packed_scene.get_meta("SingleInstance")
 			if not (new_scene_instance and is_instance_valid(new_scene_instance)):
 				new_scene_instance = _scene_data[0].instance()
-				new_scene_instance.position = Vector2(_cell_pos.x*cell_size.x,_cell_pos.y*cell_size.y)
+				if new_scene_instance is Node2D:
+					new_scene_instance.position = Vector2(_cell_pos.x*cell_size.x,_cell_pos.y*cell_size.y)
+				elif new_scene_instance is Control:
+					new_scene_instance.rect_position = Vector2(_cell_pos.x*cell_size.x,_cell_pos.y*cell_size.y)
 				container_node.add_child(new_scene_instance)
 				new_scene_instance.set_owner(get_tree().edited_scene_root)
 				# Add the Spawner instance id to identify which nodes will be freed when the "clean" button is pressed
@@ -150,7 +154,7 @@ func instance_scenes_from_dictionary() -> Array:
 			_target.call(_scene_settings.method_name,_params)
 		else:
 			printerr("Tile with id:"+str(_tile_id)+" does not have any related scene in the tile to scene dictionary.")
-			return []
+			continue
 	if clean_after_spawning:
 		clear()
 	emit_signal("scenes_instanced")
