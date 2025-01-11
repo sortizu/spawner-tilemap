@@ -110,6 +110,9 @@ func instance_scenes_from_dictionary() -> Array:
 		if not _scene_data.empty():
 			_packed_scene = _scene_data[0]
 			_scene_settings = _scene_data[1]
+		else:
+			_packed_scene = null
+			_scene_settings = null
 		if _scene_settings and _scene_settings.instance_mode == 0:
 			continue
 		if _packed_scene:

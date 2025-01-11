@@ -82,4 +82,7 @@ func _on_scene_changed(scene:PackedScene):
 	emit_signal("row_changed", tile_id, dict_id, scene)
 
 func _on_scene_settings_pressed():
-	emit_signal("scene_settings_pressed",tile_id, dict_id, coord, tile_texture.texture)
+	var atlas_texture: AtlasTexture = AtlasTexture.new()
+	atlas_texture.atlas = tile_texture.texture
+	atlas_texture.region = tile_texture.region_rect
+	emit_signal("scene_settings_pressed",tile_id, dict_id, coord, atlas_texture)
