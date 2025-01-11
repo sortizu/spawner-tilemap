@@ -16,6 +16,8 @@ export (bool) var clean_after_spawning
 # Path of the node to store all the scenes instances setted on tile_to_scene_dictionary
 export (NodePath) var container_node_path: NodePath setget set_container_nodepath
 onready var container_node = get_node_or_null(container_node_path)
+# Shows an error in the console when trying to instantiate an unassigned tile
+var print_errors: bool = true
 # TileToSceneDictionary resource instance
 # This variable is created automatically and modified by the TileToSceneEditor
 # It stores each tile id as a key and a PackedScene as the value for each id.
@@ -75,6 +77,11 @@ func _get_property_list() -> Array:
 		usage = PROPERTY_USAGE_DEFAULT,
 		name="tile_to_scene_dictionary",
 		type=TYPE_OBJECT
+	})
+	properties.append({
+		usage = PROPERTY_USAGE_DEFAULT,
+		name="print_errors",
+		type=TYPE_BOOL
 	})
 	return properties
 
@@ -156,7 +163,7 @@ func instance_scenes_from_dictionary() -> Array:
 				_params["metadata"] = _scene_settings.metadata
 			_target.call(_scene_settings.method_name,_params)
 		else:
-			printerr("Tile with id:"+str(_tile_id)+" does not have any related scene in the tile to scene dictionary.")
+			if print_errors: printerr("Tile with id:"+str(_tile_id)+" does not have any related scene in the tile to scene dictionary.")
 			continue
 	if clean_after_spawning:
 		clear()
