@@ -1,5 +1,5 @@
 tool
-extends MarginContainer
+extends HFlowContainer
 
 ## Shows an specific relation between a tile id an a PackedScene inside the [tile_to_scene_dictionary]
 
@@ -18,12 +18,12 @@ onready var editor_scene_picker: EditorScenePicker
 
 # CHILD NODES
 
-onready var id_value_label: Label = $HBoxContainer/MarginContainer/Information/HBoxContainer/HBoxContainer/IdValueLabel
-onready var scene_name_label: Label = $HBoxContainer/MarginContainer/Information/HBoxContainer2/SceneNameLabel
-onready var resource: Control = $HBoxContainer/MarginContainer/Resource
-onready var tile_texture: NinePatchRect = $HBoxContainer/TileTexture
-onready var scene_settings_button: Button = $HBoxContainer/MarginContainer/Information/HBoxContainer2/SceneSettingsButton
-onready var tile_mode_label: Label = $HBoxContainer/MarginContainer/Information/HBoxContainer/TileModeLabel
+onready var id_value_label: Label = $DataContainer/TileData/IdValueLabel
+onready var scene_name_label: Label = $DataContainer/SceneDataAndSettings/SceneNameLabel
+onready var data_container: Control = $DataContainer
+onready var tile_texture: NinePatchRect = $TileTexture
+onready var scene_settings_button: Button = $DataContainer/SceneDataAndSettings/SceneSettingsButton
+onready var tile_mode_label: Label = $DataContainer/TileData/TileModeLabel
 
 # SIGNALS
 
@@ -33,10 +33,11 @@ signal scene_settings_pressed(_tile_id, _dict_id, texture)
 # METHODS
 
 func _ready() -> void:
-	editor_scene_picker = EditorScenePicker.new()
-	resource.add_child(editor_scene_picker)
-	editor_scene_picker.connect("scene_changed",self,"_on_scene_changed")
-	scene_settings_button.connect("pressed",self,"_on_scene_settings_pressed")
+	if Engine.editor_hint:
+		editor_scene_picker = EditorScenePicker.new()
+		data_container.add_child(editor_scene_picker)
+		editor_scene_picker.connect("scene_changed",self,"_on_scene_changed")
+		scene_settings_button.connect("pressed",self,"_on_scene_settings_pressed")
 
 func set_tilemode(_tile_mode: int, _tile_mode_name: String, _style_box: StyleBoxFlat):
 	tile_mode_label.set("custom_styles/normal",_style_box)
@@ -45,8 +46,8 @@ func set_tilemode(_tile_mode: int, _tile_mode_name: String, _style_box: StyleBox
 
 func _notification(what):
 	if what  == NOTIFICATION_EXIT_TREE:
-#		scene_resource_picker.disconnect("scene_changed",self,"_on_scene_changed")
-#		scene_settings_button.disconnect("pressed",self,"_on_scene_settings_pressed")
+		editor_scene_picker.disconnect("scene_changed",self,"_on_scene_changed")
+		scene_settings_button.disconnect("pressed",self,"_on_scene_settings_pressed")
 		pass
 
 func change_texture(new_texture: Texture, rect: Rect2):
