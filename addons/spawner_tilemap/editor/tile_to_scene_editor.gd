@@ -6,7 +6,7 @@ extends WindowDialog
 
 # DEPENDENCIES
 
-var tile_to_scene_row: PackedScene = preload("res://addons/spawner_tilemap/editor/tile_to_scene_row_test.tscn")
+var tile_to_scene_row: PackedScene = preload("res://addons/spawner_tilemap/editor/tile_to_scene_row.tscn")
 var scene_settings: GDScript = preload("res://addons/spawner_tilemap/node/scene_settings.gd")
 var editor_interface: EditorInterface
 var spawner_tilemap: SpawnerTileMap
@@ -193,17 +193,21 @@ func show_rows_in_page(_selected_page: int, _search_text: String = "*", _filter_
 	set_current_page(_selected_page)
 
 ## Creates a custom resource to add data to each scene and to customize their spawning process
-func on_scene_settings_pressed(_tile_id: int, _dict_id: String, coord: Vector2, _texture: Texture):
+func on_scene_settings_pressed(_tile_id: int, _dict_id: String, coord: Vector2, _texture: Texture, _region: Rect2):
 	var tile_to_scene_dictionary = spawner_tilemap.tile_to_scene_dictionary
 	var _scene_data: Array = tile_to_scene_dictionary.dictionary.get(_dict_id,[null,null])
 	var _scene_settings: Resource = _scene_data[1]
 	if not _scene_settings:
 		_scene_settings = scene_settings.new()
-		_scene_settings.tile_mode = spawner_tilemap.tile_set.tile_get_tile_mode(_tile_id)
-		_scene_settings.set_tile(_texture) 
+		_scene_settings.tile_mode = spawner_tilemap.tile_set.tile_get_tile_mode(_tile_id) 
 		_scene_settings.subtile_coord = coord
 		_scene_data[1] = _scene_settings
 		tile_to_scene_dictionary.dictionary[_dict_id] = _scene_data
+	if not _scene_settings.tile:
+		var atlas_texture: AtlasTexture = AtlasTexture.new()
+		atlas_texture.atlas = _texture
+		atlas_texture.region = _region
+		_scene_settings.set_tile(atlas_texture)
 	editor_interface.edit_resource(_scene_settings)
 	queue_free()
 
