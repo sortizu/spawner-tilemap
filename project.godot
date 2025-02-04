@@ -20,16 +20,12 @@ _global_script_class_icons={
 
 [application]
 
-config/name="spawner_tilemap"
+config/name="SpawnerTileMap"
 config/icon="res://icon.png"
 
 [editor_plugins]
 
 enabled=PoolStringArray( "res://addons/spawner_tilemap/plugin.cfg" )
-
-[global]
-
-out=false
 
 [gui]
 

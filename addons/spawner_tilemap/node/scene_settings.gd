@@ -13,10 +13,12 @@ var subtile_coord: Vector2
 
 var metadata: Dictionary
 var instance_mode: int = 2
+var position_zero: bool
 var default_parameters: int
 var path_to_target: String
 var method_name: String
 var clean_tile: bool
+var call_once: bool
 
 func _get_property_list():
 	var properties: Array = []
@@ -62,11 +64,21 @@ func _get_property_list():
 	else:
 		flags = "Tile Position,Tile ID,Metadata"
 	properties.append({
+		name="position_zero",
+		type=TYPE_BOOL,
+		usage = PROPERTY_USAGE_DEFAULT
+	})
+	properties.append({
 		name="default_parameters",
 		type=TYPE_INT,
 		hint_string = flags,
 		hint = PROPERTY_HINT_FLAGS,
 		usage = PROPERTY_USAGE_DEFAULT,
+	})
+	properties.append({
+		name="call_once",
+		type=TYPE_BOOL,
+		usage = PROPERTY_USAGE_DEFAULT
 	})
 	properties.append({
 		name="path_to_target",
