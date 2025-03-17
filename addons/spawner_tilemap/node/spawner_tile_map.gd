@@ -10,15 +10,15 @@ class_name SpawnerTileMap, "res://addons/spawner_tilemap/spawner_tile_map.svg"
 
 # Instance the scenes according to the tiles showed in the tilemap
 # or disable the instancing function (it will work as usual tilemap)
-export (bool) var spawn_scenes_at_start
+export (int, "On ready", "Deferred", "Threaded","Disabled") var instance_mode = 1
 # Clean all the cells from the tilemap after instancing the scenes, it doesn't consider specific scene settings for each tile
-export (bool) var clean_after_spawning
+export (bool) var clean_tiles
 # Path of the node to store all the scenes instances setted on tile_to_scene_dictionary
-export (NodePath) var container_node_path: NodePath setget set_container_nodepath
-export var threaded: bool = false
-onready var container_node = get_node_or_null(container_node_path)
+export (NodePath) var instance_container: NodePath setget set_container_nodepath
+onready var container_node = get_node_or_null(instance_container)
 # Shows an error in the console when trying to instantiate an unassigned tile
 var print_errors: bool = true
+var show_time: bool = false
 # TileToSceneDictionary resource instance
 # This variable is created automatically and modified by the TileToSceneEditor
 # It stores each tile id as a key and a PackedScene as the value for each id.
@@ -46,11 +46,13 @@ func _ready() -> void:
 		new_tile_to_scene_dict.loaded_dictionary=true
 		set_tile_to_scene_dict(new_tile_to_scene_dict)
 	if not Engine.editor_hint:
-		if spawn_scenes_at_start:
-			if threaded:
-				threaded_instance()
-			else:
+		match instance_mode:
+			0:
+				instance_scenes()
+			1:
 				instance_in_idle_time()
+			2:
+				threaded_instance()
 	else:
 		connect("settings_changed",self,"_on_settings_changed")
 	if tile_set:
@@ -90,6 +92,11 @@ func _get_property_list() -> Array:
 		name="print_errors",
 		type=TYPE_BOOL
 	})
+	properties.append({
+		usage = PROPERTY_USAGE_DEFAULT,
+		name="show_time",
+		type=TYPE_BOOL
+	})
 	return properties
 
 ## Set function for custom resource that contains the dictionary of tiles and scenes
@@ -110,12 +117,12 @@ func _exit_tree():
 	if instancing: instancing = false
 	elif thread.is_active(): thread.wait_to_finish()
 
-## Instances scenes in the container node according to the visible tiles in this tilemap.
+## Instances scenes in the instance_container node according to the visible tiles in this tilemap.
 func instance_scenes() -> Array:
 	if not container_node:
-		printerr("[SpawnerTileMap] There isn't any container node selected to instance the scenes.")
+		printerr("[SpawnerTileMap] There isn't any instance_container node selected to instance the scenes.")
 		return []
-#	var start: int = Time.get_ticks_usec()
+	var start: int = Time.get_ticks_usec()
 	var _tile_id: int = -1
 	var _tile_id_str: String
 	var new_scene_instance: Node
@@ -174,7 +181,7 @@ func instance_scenes() -> Array:
 						new_scene_instance.position = Vector2(_cell_pos.x*cell_size.x,_cell_pos.y*cell_size.y)
 					elif new_scene_instance is Control:
 						new_scene_instance.rect_position = Vector2(_cell_pos.x*cell_size.x,_cell_pos.y*cell_size.y)
-				if threaded:
+				if instance_mode == 2:
 					container_node.call_deferred("add_child",new_scene_instance)
 					new_scene_instance.call_deferred("set_owner",get_tree().edited_scene_root)
 				else:
@@ -197,7 +204,7 @@ func instance_scenes() -> Array:
 							_scene_settings.add_cell_pos(_cell_pos)
 							continue
 			# Calling method after instancing
-			if threaded:
+			if instance_mode == 2:
 				call_deferred("call_to_target", _target, _tile_id, _cell_pos, _scene_settings)
 			else:
 				call_to_target(_target, _tile_id, _cell_pos, _scene_settings)
@@ -205,13 +212,18 @@ func instance_scenes() -> Array:
 			if print_errors: printerr("Tile with id:"+str(_tile_id)+" does not have any related scene in the tile to scene dictionary.")
 			continue
 	for _settings in _instances_scene_settings:
-		if threaded: call_deferred("call_to_target_at_end",_settings)
+		if instance_mode == 2: call_deferred("call_to_target_at_end",_settings)
 		else: call_to_target_at_end(_settings)
-	if clean_after_spawning:
+	if clean_tiles:
 		clear()
-	emit_signal("scenes_instanced")
-	print("[SpawnerTileMap] Scenes instanced successfully.")
-#	print("Time: %s"%[(Time.get_ticks_usec()-start)/1000000.0])
+	if instance_mode == 2:
+		call_deferred("print","[SpawnerTileMap/%s] Scenes instanced successfully."%name)
+		call_deferred("emit_signal","scenes_instanced")
+		if show_time: call_deferred("print","[SpawnerTileMap/%s] Time: %s"%[name,(Time.get_ticks_usec()-start)/1000000.0])
+	else:
+		emit_signal("scenes_instanced")
+		print("[SpawnerTileMap/%s] Scenes instanced successfully."%name)
+		if show_time: print("[SpawnerTileMap/%s] Time: %s"%[name,(Time.get_ticks_usec()-start)/1000000.0])
 	instancing = false
 	return _instanced_scenes
 
@@ -310,10 +322,10 @@ func clean_instanced_scenes(_instances: Array, free_instances: bool = true):
 				container_node.remove_child(node)
 		emit_signal("instanced_scenes_cleaned")
 
-## Set function for container_node_path.
+## Set function for instance_container.
 func set_container_nodepath(new_nodepath:NodePath):
 	container_node = get_node_or_null(new_nodepath)
-	container_node_path = new_nodepath
+	instance_container = new_nodepath
 
 ## Checks if the [container_node] has any scene instanced by this SpawnerTileMap
 func _has_container_instances() -> bool:
