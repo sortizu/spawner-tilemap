@@ -76,6 +76,7 @@ func _notification(what: int):
 		search_button.disconnect("pressed",self,"_on_search_text_entered")
 		filters_options.disconnect("item_selected",self,"_on_filter_selected")
 		clean_button.disconnect("pressed",self,"_on_ClearButton_pressed")
+
 ## Adds a row to the main container, which contains the image of the tile, the name of the scene and a PackedScene resource picker
 func set_row_data(_row_index: int,texture: Texture, region: Rect2, tile_id: int, dict_id: String, coord: Vector2, scene: PackedScene, tile_mode: int):
 	var row: Control
@@ -203,6 +204,7 @@ func on_scene_settings_pressed(_tile_id: int, _dict_id: String, coord: Vector2, 
 		_scene_settings.subtile_coord = coord
 		_scene_data[1] = _scene_settings
 		tile_to_scene_dictionary.dictionary[_dict_id] = _scene_data
+	_scene_settings.tile_id = _tile_id
 	if not _scene_settings.tile:
 		var atlas_texture: AtlasTexture = AtlasTexture.new()
 		atlas_texture.atlas = _texture
@@ -249,7 +251,6 @@ func _on_PageNumber_text_entered(new_text: String):
 		show_rows_in_page(clamp(int(new_text),1,total_pages),_search_text,filters_options.selected,false,false)
 	else:
 		page_number_line_edit.text = str(current_page)
-
 
 func _on_PreviousPageButton_pressed():
 	show_rows_in_page(current_page - 1,_search_text,filters_options.selected,false,false)

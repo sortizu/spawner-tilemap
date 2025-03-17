@@ -30,6 +30,7 @@ const SceneSettings: GDScript = preload("res://addons/spawner_tilemap/node/scene
 var _tile_count: int = 0
 var thread: Thread = Thread.new()
 var instancing: bool = false
+var single_global_instances: Dictionary
 
 # SIGNALS
 
@@ -114,19 +115,21 @@ func instance_scenes() -> Array:
 	if not container_node:
 		printerr("[SpawnerTileMap] There isn't any container node selected to instance the scenes.")
 		return []
-	var start: int = Time.get_ticks_usec()
+#	var start: int = Time.get_ticks_usec()
 	var _tile_id: int = -1
 	var _tile_id_str: String
 	var new_scene_instance: Node
 	var _scene_data: Array
 	var _packed_scene: PackedScene
 	var _scene_settings: SceneSettings
+	var _instances_scene_settings: Array
 	var _instanced_scenes: Array
 	var _target: Node
 	var _params: Dictionary
 	var _call_once_params: Dictionary
 	var _temp_call_once_params: Array
 	var _subtile_coord: Vector2
+	var _single_instance: bool
 	instancing = true
 	for _cell_pos in get_used_cells():
 		if not instancing:
@@ -149,20 +152,24 @@ func instance_scenes() -> Array:
 		if _scene_settings and _scene_settings.instance_mode == 0:
 			continue
 		if _packed_scene:
+			_single_instance = false
 			new_scene_instance = null
 			if _scene_settings:
 				if _scene_settings.clean_tile:
 					set_cellv(_cell_pos,-1)
-				if _scene_settings.instance_mode == 1 and _packed_scene.has_meta("SingleInstance"):
+				if _scene_settings.instance_mode == 1:
+					new_scene_instance = _scene_settings.single_instance
+				if _scene_settings.instance_mode == 2:
+					new_scene_instance = single_global_instances.get(_packed_scene)
+					if new_scene_instance and not _scene_settings.single_instance: _instances_scene_settings.append(_scene_settings)
+				if new_scene_instance:
+					_scene_settings.single_instance = new_scene_instance
 					if _scene_settings.call_once:
-						_temp_call_once_params = _call_once_params[_tile_id_str]
-						if _temp_call_once_params.size() == 4:
-							(_temp_call_once_params[3] as CustomVector2Pool).add(_cell_pos)
+						_scene_settings.add_cell_pos(_cell_pos)
 						continue
-					new_scene_instance = _packed_scene.get_meta("SingleInstance")
 			if not (new_scene_instance and is_instance_valid(new_scene_instance)):
-				new_scene_instance = _scene_data[0].instance()
-				if not _scene_settings.position_zero:
+				new_scene_instance = _packed_scene.instance()
+				if not _scene_settings or not _scene_settings.position_zero:
 					if new_scene_instance is Node2D:
 						new_scene_instance.position = Vector2(_cell_pos.x*cell_size.x,_cell_pos.y*cell_size.y)
 					elif new_scene_instance is Control:
@@ -176,27 +183,20 @@ func instance_scenes() -> Array:
 				# Add the Spawner instance id to identify which nodes will be freed when the "clean" button is pressed
 				new_scene_instance.set_meta(get_class(),get_instance_id())
 				_instanced_scenes.append(new_scene_instance)
-				if _scene_settings and _scene_settings.instance_mode == 1:
-					_packed_scene.set_meta("SingleInstance",new_scene_instance)
-					if _scene_settings.call_once:
-						if _scene_settings.default_parameters & 1:
-							var v2pool: CustomVector2Pool = CustomVector2Pool.new()
-							v2pool.add(_cell_pos)
-							_call_once_params[_tile_id_str] = [new_scene_instance,_tile_id,_scene_settings,v2pool]
-						else:
-							_call_once_params[_tile_id_str] = [new_scene_instance,_tile_id,_scene_settings]
-						continue
+				if _scene_settings:
+					if _scene_settings.instance_mode == 1:
+						_scene_settings.single_instance = new_scene_instance
+						_single_instance = true
+					if _scene_settings.instance_mode == 2:
+						single_global_instances[_packed_scene] = new_scene_instance
+						_scene_settings.single_instance = new_scene_instance
+						_single_instance = true
+					if _single_instance:
+						_instances_scene_settings.append(_scene_settings)
+						if _scene_settings.call_once and _scene_settings.default_parameters & 1:
+							_scene_settings.add_cell_pos(_cell_pos)
+							continue
 			# Calling method after instancing
-			if not _scene_settings: continue
-			if _scene_settings.method_name.empty(): continue
-			if _scene_settings.path_to_target.empty(): _target = new_scene_instance
-			else: _target = new_scene_instance.get_node_or_null(_scene_settings.path_to_target)
-			if not _target:
-				printerr("[SpawnerTileMap] Can't find target node '%s' (tile-id %s)"%[_scene_settings.path_to_target,_tile_id])
-				continue
-			if not _target.has_method(_scene_settings.method_name): 
-				printerr("[SpawnerTileMap] Can't find method with name '%s' in target node (tile-id %s)"%[_scene_settings.method_name,_tile_id])
-				continue
 			if threaded:
 				call_deferred("call_to_target", _target, _tile_id, _cell_pos, _scene_settings)
 			else:
@@ -204,26 +204,28 @@ func instance_scenes() -> Array:
 		else:
 			if print_errors: printerr("Tile with id:"+str(_tile_id)+" does not have any related scene in the tile to scene dictionary.")
 			continue
-	var v2pool: CustomVector2Pool
-	for params in _call_once_params.values():
-		if params.size() > 3:
-			v2pool = params[3]
-			v2pool.trim()
-			if threaded: call_deferred("call_to_target_at_end",params[0],params[1],v2pool.pool,params[2])
-			else: call_to_target_at_end(params[0],params[1],v2pool.pool,params[2])
-		else:
-			if threaded: call_deferred("call_to_target_at_end",params[0],params[1],[],params[2])
-			else: call_to_target_at_end(params[0],params[1],[],params[2])
+	for _settings in _instances_scene_settings:
+		if threaded: call_deferred("call_to_target_at_end",_settings)
+		else: call_to_target_at_end(_settings)
 	if clean_after_spawning:
 		clear()
 	emit_signal("scenes_instanced")
 	print("[SpawnerTileMap] Scenes instanced successfully.")
-	print("Time: %s"%[(Time.get_ticks_usec()-start)/1000000.0])
+#	print("Time: %s"%[(Time.get_ticks_usec()-start)/1000000.0])
 	instancing = false
 	return _instanced_scenes
 
 func call_to_target(_target: Node, _tile_id: int, _cell_pos: Vector2, _scene_settings: SceneSettings):
+	if not _scene_settings: return
+	if _scene_settings.method_name.empty(): return
 	var params: Array = []
+	if _target and not _scene_settings.path_to_target.empty(): _target = _target.get_node_or_null(_scene_settings.path_to_target)
+	if not _target:
+		printerr("[SpawnerTileMap/%s] Can't find target node '%s' (tile-id %s)"%[name,_scene_settings.path_to_target,_tile_id])
+		return
+	if not _target.has_method(_scene_settings.method_name): 
+		printerr("[SpawnerTileMap/%s] Can't find method with name '%s' in target node (tile-id %s)"%[name,_scene_settings.method_name,_tile_id])
+		return
 	if _scene_settings.default_parameters & 0001:
 		params.append(_cell_pos)
 	if _scene_settings.default_parameters & 0010:
@@ -235,12 +237,23 @@ func call_to_target(_target: Node, _tile_id: int, _cell_pos: Vector2, _scene_set
 	_target.callv(_scene_settings.method_name, params)
 	
 	
-func call_to_target_at_end(_target: Node, _tile_id: int, _cell_pos_array: Array, _scene_settings: SceneSettings):
+func call_to_target_at_end(_scene_settings: SceneSettings):
+	if _scene_settings.method_name.empty(): return
 	var params: Array = []
+	var _target: Node
+	if _scene_settings.path_to_target.empty(): _target = _scene_settings.single_instance
+	else: _target = _scene_settings.single_instance.get_node_or_null(_scene_settings.path_to_target)
+	if not _target:
+		printerr("[SpawnerTileMap/%s] Can't find target node '%s' (tile-id %s)"%[name,_scene_settings.path_to_target,_scene_settings.tile_id])
+		return
+	if not _target.has_method(_scene_settings.method_name): 
+		printerr("[SpawnerTileMap/%s] Can't find method with name '%s' in target node (tile-id %s)"%[name,_scene_settings.method_name,_scene_settings.tile_id])
+		return
+	_scene_settings.trim()
 	if _scene_settings.default_parameters & 0001:
-		params.append(_cell_pos_array)
+		params.append(_scene_settings.cell_pos_pool)
 	if _scene_settings.default_parameters & 0010:
-		params.append(_tile_id)
+		params.append(_scene_settings.tile_id)
 	if _scene_settings.default_parameters & 0100:
 		params.append(_scene_settings.metadata)
 	if _scene_settings.default_parameters & 1000:
@@ -340,22 +353,3 @@ func _on_settings_changed():
 		_dict_temp.erase(key)
 	tile_to_scene_dictionary.dictionary = _dict_temp
 
-## Class used to save an array of vectors when the flag "one_call_at_end" is activated for an scene
-class CustomVector2Pool:
-	var pool: Array
-	var chunks: int = 0
-	var sub_index: int = 0 
-	func _init():
-		pool.resize(16)
-	func add(_value: Vector2):
-		if sub_index >= 16:
-			sub_index = 0
-			chunks += 1
-			pool.resize(len(pool) + 16)
-		pool[chunks * 16 + sub_index] = _value
-		sub_index += 1
-	func trim():
-		if chunks < 1:
-			pool.resize(sub_index)
-		elif sub_index < 16:
-			pool.resize(len(pool) - (16 - sub_index))

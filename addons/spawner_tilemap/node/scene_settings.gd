@@ -5,6 +5,7 @@ extends Resource
 
 # TILE DATA
 
+var tile_id: int
 var tile_mode: int
 var tile: Texture setget set_tile
 var subtile_coord: Vector2
@@ -12,13 +13,22 @@ var subtile_coord: Vector2
 # SCENE SETTINGS
 
 var metadata: Dictionary
-var instance_mode: int = 2
+var instance_mode: int = 3
 var position_zero: bool
 var default_parameters: int
 var path_to_target: String
 var method_name: String
 var clean_tile: bool
 var call_once: bool
+
+# INSTANCE DATA
+
+const array_pool_size: int = 32
+var sub_index: int
+var chunk: int
+var single_instance: Node
+# Array of positions used when the flag "one_call_at_end" is activated for an scene
+var cell_pos_pool: PoolVector2Array
 
 func _get_property_list():
 	var properties: Array = []
@@ -56,7 +66,7 @@ func _get_property_list():
 		type=TYPE_INT,
 		usage = PROPERTY_USAGE_DEFAULT,
 		hint = PROPERTY_HINT_ENUM,
-		hint_string = "Ignore,Single,Multiple"
+		hint_string = "Ignore,Single,Global Single,Multiple"
 	})
 	# Different parameters depending on tile mode
 	if tile_mode == TileSet.ATLAS_TILE or tile_mode == TileSet.AUTO_TILE:
@@ -100,8 +110,36 @@ func _get_property_list():
 		type=TYPE_INT,
 		usage = PROPERTY_USAGE_NOEDITOR
 	})
+	properties.append({
+		name="cell_pos_pool",
+		type=TYPE_VECTOR2_ARRAY,
+		usage = PROPERTY_USAGE_NO_INSTANCE_STATE
+	})
+	properties.append({
+		name="single_instance",
+		type=TYPE_OBJECT,
+		usage = PROPERTY_USAGE_NO_INSTANCE_STATE
+	})
 	return properties
 
 func set_tile(new_tile: Texture):
 	if not tile:
 		tile = new_tile
+
+# METHODS FOR INSTANCING PROCESS
+
+func add_cell_pos(_pos: Vector2):
+	if sub_index >= array_pool_size:
+		sub_index = 0
+		chunk += 1
+		cell_pos_pool.resize(len(cell_pos_pool) + array_pool_size)
+	elif cell_pos_pool.size() == 0:
+		cell_pos_pool.resize(array_pool_size)
+	cell_pos_pool.set(chunk * array_pool_size + sub_index, _pos)
+	sub_index += 1
+
+func trim():
+	if chunk < 1:
+		cell_pos_pool.resize(sub_index)
+	elif sub_index < array_pool_size:
+		cell_pos_pool.resize(len(cell_pos_pool) - (array_pool_size - sub_index))
