@@ -3,7 +3,7 @@ extends TileMap
 class_name SpawnerTileMap, "res://addons/spawner_tilemap/spawner_tile_map.svg"
 
 ## Instances selected scenes based on the cells showed in this TileMap
-## To select the scenes to instanced, press the "edit scenes" button that appears in the inspector
+## To select the scenes to be instanced, press the "edit scenes" button that appears in the inspector
 ## when this node is selected.
 
 # CLASS VARIABLES
@@ -19,6 +19,7 @@ onready var container_node = get_node_or_null(instance_container)
 # Shows an error in the console when trying to instantiate an unassigned tile
 var print_errors: bool = true
 var show_time: bool = false
+var signal_per_instance: bool
 # TileToSceneDictionary resource instance
 # This variable is created automatically and modified by the TileToSceneEditor
 # It stores each tile id as a key and a PackedScene as the value for each id.
@@ -34,7 +35,8 @@ var single_global_instances: Dictionary
 
 # SIGNALS
 
-signal scenes_instanced
+signal intancing_finished
+signal scene_instanced(scene,tile_id,spawner_node)
 signal instanced_scenes_cleaned
 
 # METHODS
@@ -95,6 +97,11 @@ func _get_property_list() -> Array:
 	properties.append({
 		usage = PROPERTY_USAGE_DEFAULT,
 		name="show_time",
+		type=TYPE_BOOL
+	})
+	properties.append({
+		usage = PROPERTY_USAGE_DEFAULT,
+		name="signal_per_instance",
 		type=TYPE_BOOL
 	})
 	return properties
@@ -184,9 +191,13 @@ func instance_scenes() -> Array:
 				if instance_mode == 2:
 					container_node.call_deferred("add_child",new_scene_instance)
 					new_scene_instance.call_deferred("set_owner",get_tree().edited_scene_root)
+					if signal_per_instance:
+						call_deferred("emit_signal","scene_instanced",new_scene_instance,_tile_id_str,self)
 				else:
 					container_node.add_child(new_scene_instance)
 					new_scene_instance.set_owner(get_tree().edited_scene_root)
+					if signal_per_instance:
+						emit_signal("scene_instanced",new_scene_instance,_tile_id_str,self)
 				# Add the Spawner instance id to identify which nodes will be freed when the "clean" button is pressed
 				new_scene_instance.set_meta(get_class(),get_instance_id())
 				_instanced_scenes.append(new_scene_instance)
@@ -218,10 +229,10 @@ func instance_scenes() -> Array:
 		clear()
 	if instance_mode == 2:
 		call_deferred("print","[SpawnerTileMap/%s] Scenes instanced successfully."%name)
-		call_deferred("emit_signal","scenes_instanced")
+		call_deferred("emit_signal","intancing_finished")
 		if show_time: call_deferred("print","[SpawnerTileMap/%s] Time: %s"%[name,(Time.get_ticks_usec()-start)/1000000.0])
 	else:
-		emit_signal("scenes_instanced")
+		emit_signal("intancing_finished")
 		print("[SpawnerTileMap/%s] Scenes instanced successfully."%name)
 		if show_time: print("[SpawnerTileMap/%s] Time: %s"%[name,(Time.get_ticks_usec()-start)/1000000.0])
 	instancing = false
