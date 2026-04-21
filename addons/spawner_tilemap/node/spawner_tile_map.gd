@@ -127,7 +127,7 @@ func _exit_tree():
 ## Instances scenes in the instance_container node according to the visible tiles in this tilemap.
 func instance_scenes() -> Array:
 	if not container_node:
-		printerr("[SpawnerTileMap] There isn't any instance_container node selected to instance the scenes.")
+		printerr("[SpawnerTileMap/%s] There isn't any instance_container node selected to instance the scenes."%[name])
 		return []
 	var start: int = Time.get_ticks_usec()
 	var _tile_id: int = -1
@@ -213,15 +213,18 @@ func instance_scenes() -> Array:
 						_instances_scene_settings.append(_scene_settings)
 						if _scene_settings.default_parameters & 1:
 							_scene_settings.add_cell_pos(_cell_pos)
+						if (tile_set.tile_get_tile_mode(_tile_id) == TileSet.SINGLE_TILE and _scene_settings.default_parameters & 1000) or \
+							(tile_set.tile_get_tile_mode(_tile_id) != TileSet.SINGLE_TILE and _scene_settings.default_parameters & 10000):
+								_scene_settings.add_cell_axis_setting(Vector3(is_cell_x_flipped(_cell_pos.x,_cell_pos.y),is_cell_y_flipped(_cell_pos.x,_cell_pos.y),is_cell_transposed(_cell_pos.x,_cell_pos.y)))
 						continue
 			# TODO: Add a path_to_target verification to avoid calling a new method
 			# Calling method after instancing
 			if instance_mode == 2: # Calling target nodes on idle time if threaded instancing is active
 				call_deferred("call_to_target", new_scene_instance, _tile_id, _cell_pos, _scene_settings)
 			else:
-				call_to_target(new_scene_instance, _tile_id, _cell_pos, _scene_settings)
+				call_to_target(new_scene_instance, _tile_id, _cell_pos, Vector3(is_cell_x_flipped(_cell_pos.x,_cell_pos.y),is_cell_y_flipped(_cell_pos.x,_cell_pos.y),is_cell_transposed(_cell_pos.x,_cell_pos.y)), _scene_settings)
 		else:
-			if print_errors: printerr("Tile with id:"+str(_tile_id)+" does not have any related scene in the tile to scene dictionary.")
+			if print_errors: printerr("[SpawnerTileMap/%s] Tile with id:"%[name]+str(_tile_id)+" does not have any related scene in the tile to scene dictionary.")
 			continue
 	for _settings in _instances_scene_settings:
 		if instance_mode == 2: call_deferred("call_to_target_at_end",_settings)
@@ -239,16 +242,16 @@ func instance_scenes() -> Array:
 	instancing = false
 	return _instanced_scenes
 
-func call_to_target(_target: Node, _tile_id: int, _cell_pos: Vector2, _scene_settings: SceneSettings):
+func call_to_target(_target: Node, _tile_id: int, _cell_pos: Vector2, _axis_settings: Vector3, _scene_settings: SceneSettings):
 	if not _scene_settings: return
 	if _scene_settings.method_name.empty(): return
 	var params: Array = []
 	if _target and not _scene_settings.path_to_target.empty(): _target = _target.get_node_or_null(_scene_settings.path_to_target)
 	if not _target:
-		printerr("[%s/SpawnerTileMap/call_to_target] Can't find target node '%s' (tile-id %s)"%[name,_scene_settings.path_to_target,_tile_id])
+		printerr("[SpawnerTileMap/%s/call_to_target] Can't find target node '%s' (tile-id %s)"%[name,_scene_settings.path_to_target,_tile_id])
 		return
 	if not _target.has_method(_scene_settings.method_name): 
-		printerr("[%s/SpawnerTileMap/call_to_target] Can't find method with name '%s' in target node (tile-id %s)"%[name,_scene_settings.method_name,_tile_id])
+		printerr("[SpawnerTileMap/%s/call_to_target] Can't find method with name '%s' in target node (tile-id %s)"%[name,_scene_settings.method_name,_tile_id])
 		return
 	if _scene_settings.default_parameters & 0001:
 		params.append(_cell_pos)
@@ -256,11 +259,17 @@ func call_to_target(_target: Node, _tile_id: int, _cell_pos: Vector2, _scene_set
 		params.append(_tile_id)
 	if _scene_settings.default_parameters & 0100:
 		params.append(_scene_settings.metadata)
-	if _scene_settings.default_parameters & 1000:
-		params.append(_scene_settings.subtile_coord)
+	if tile_set.tile_get_tile_mode(_tile_id) != TileSet.SINGLE_TILE:
+		if _scene_settings.default_parameters & 1000:
+			params.append(_scene_settings.subtile_coord)
+		if _scene_settings.default_parameters & 10000:
+			params.append(_axis_settings)
+	else:
+		if _scene_settings.default_parameters & 1000:
+			params.append(_axis_settings)
 	_target.callv(_scene_settings.method_name, params)
-	
-	
+
+
 func call_to_target_at_end(_scene_settings: SceneSettings):
 	if _scene_settings.method_name.empty(): return
 	var params: Array = []
@@ -268,10 +277,10 @@ func call_to_target_at_end(_scene_settings: SceneSettings):
 	if _scene_settings.path_to_target.empty(): _target = _scene_settings.single_instance
 	else: _target = _scene_settings.single_instance.get_node_or_null(_scene_settings.path_to_target)
 	if not _target:
-		printerr("[%s/SpawnerTileMap/call_to_target_at_end] Can't find target node '%s' (tile-id %s)"%[name,_scene_settings.path_to_target,_scene_settings.tile_id])
+		printerr("[SpawnerTileMap/%s/call_to_target_at_end] Can't find target node '%s' (tile-id %s)"%[name,_scene_settings.path_to_target,_scene_settings.tile_id])
 		return
 	if not _target.has_method(_scene_settings.method_name): 
-		printerr("[%s/SpawnerTileMap/call_to_target_at_end] Can't find method with name '%s' in target node (tile-id %s)"%[name,_scene_settings.method_name,_scene_settings.tile_id])
+		printerr("[SpawnerTileMap/%s/call_to_target_at_end] Can't find method with name '%s' in target node (tile-id %s)"%[name,_scene_settings.method_name,_scene_settings.tile_id])
 		return
 	_scene_settings.trim()
 	if _scene_settings.default_parameters & 0001:
@@ -280,8 +289,14 @@ func call_to_target_at_end(_scene_settings: SceneSettings):
 		params.append(_scene_settings.tile_id)
 	if _scene_settings.default_parameters & 0100:
 		params.append(_scene_settings.metadata)
-	if _scene_settings.default_parameters & 1000:
-		params.append(_scene_settings.subtile_coord)
+	if tile_set.tile_get_tile_mode(_scene_settings.tile_id) != TileSet.SINGLE_TILE:
+		if _scene_settings.default_parameters & 1000:
+			params.append(_scene_settings.subtile_coord)
+		if _scene_settings.default_parameters & 10000:
+			params.append(_scene_settings.cell_axis_settings_pool)
+	else:
+		if _scene_settings.default_parameters & 1000:
+			params.append(_scene_settings.cell_axis_settings_pool)
 	_target.callv(_scene_settings.method_name, params)
 
 ## Adds the scenes instanced by [instance_scenes] as children of the [container_node]
