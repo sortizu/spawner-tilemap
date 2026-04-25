@@ -13,7 +13,7 @@ var loaded_dictionary:bool = false
 ## Set the dictionary that stores the tile ids and PackedScenes
 func set_dictionary(new_dictionary:Dictionary):
 	for id in new_dictionary.keys():
-		var scene = new_dictionary[id][0]
+		var scene = new_dictionary[id].selected_scene
 		if scene and not (scene is PackedScene):
 			printerr("TileToSceneDictionary in key = " +str(id)+ ": The added value should be a PackedScene")
 			return

@@ -3,13 +3,18 @@ extends HFlowContainer
 
 ## Shows an specific relation between a tile id an a PackedScene inside the [tile_to_scene_dictionary]
 
+const SceneSettings: GDScript = preload("res://addons/spawner_tilemap/node/scene_settings.gd")
+
 #  VARIABLES
 
 var scene_path: String
 var tile_id: int
 var dict_id: String
 var tile_mode: int
-var coord: Vector2
+var coord: Vector2 setget set_coord
+var undo_redo: UndoRedo
+var tts_dict: Dictionary setget set_tts_dict
+var scene_settings: SceneSettings setget set_scene_settings
 
 # Classes
 
@@ -19,11 +24,13 @@ onready var editor_scene_picker: EditorScenePicker
 # CHILD NODES
 
 onready var id_value_label: Label = $DataContainer/TileData/IdValueLabel
-onready var scene_name_label: Label = $DataContainer/SceneDataAndSettings/SceneNameLabel
+onready var scene_name_label = $DataContainer/DataContainer/SceneDataAndSettings/SceneNameLabel
 onready var data_container: Control = $DataContainer
 onready var tile_texture: NinePatchRect = $TileTexture
-onready var scene_settings_button: Button = $DataContainer/SceneDataAndSettings/SceneSettingsButton
+onready var scene_settings_button = $DataContainer/DataContainer/SceneDataAndSettings/SceneSettingsButton
 onready var tile_mode_label: Label = $DataContainer/TileData/TileModeLabel
+onready var subtile_coord_label = $DataContainer/TileData/SubtileCoordLabel
+onready var base_atlas_settings_cbox = $DataContainer/DataContainer/FastSettings/BaseAtlasSettingsCbox
 
 # SIGNALS
 
@@ -36,33 +43,57 @@ func _ready() -> void:
 	if Engine.editor_hint:
 		editor_scene_picker = EditorScenePicker.new()
 		data_container.add_child(editor_scene_picker)
-		editor_scene_picker.connect("scene_changed",self,"_on_scene_changed")
+		editor_scene_picker.connect("resource_changed",self,"_on_resource_changed")
 		scene_settings_button.connect("pressed",self,"_on_scene_settings_pressed")
+		base_atlas_settings_cbox.connect("pressed",self,"_on_base_atlas_settings_cbox_pressed")
 
 func set_tilemode(_tile_mode: int, _tile_mode_name: String, _style_box: StyleBoxFlat):
 	tile_mode_label.set("custom_styles/normal",_style_box)
 	tile_mode_label.text = _tile_mode_name
 	tile_mode = _tile_mode
 
+func set_autotile_checkbox_value(cbox_value):
+	base_atlas_settings_cbox.pressed = cbox_value
+
+func set_tts_dict(new_tts_dict: Dictionary):
+	tts_dict = new_tts_dict
+
 func _notification(what):
 	if what  == NOTIFICATION_EXIT_TREE:
-		editor_scene_picker.disconnect("scene_changed",self,"_on_scene_changed")
 		scene_settings_button.disconnect("pressed",self,"_on_scene_settings_pressed")
-		pass
 
 func change_texture(new_texture: Texture, rect: Rect2):
 	tile_texture.texture = new_texture
 	tile_texture.region_rect = rect
-	
+
+func set_scene_settings(_new_scene_settings):
+	scene_settings = _new_scene_settings
+	if scene_settings:
+		base_atlas_settings_cbox.pressed = scene_settings.use_base_autotile_settings
+		editor_scene_picker.edited_resource = scene_settings.selected_scene
+	else:
+		base_atlas_settings_cbox.pressed = false
+		editor_scene_picker.edited_resource = null
+	update_scene_name()
 
 func set_id(new_tile_id: int, new_dict_id: String):
-	self.tile_id = new_tile_id
-	self.dict_id = new_dict_id
+	tile_id = new_tile_id
+	dict_id = new_dict_id
 	var tooltip: String = "TILE ID: " + str(new_tile_id)
 	if tile_mode != TileSet.SINGLE_TILE:
 		tooltip += "\nDICTIONARY ID: " + str(new_dict_id)
 	id_value_label.text = str(new_tile_id)
 	id_value_label.hint_tooltip = tooltip
+
+func set_coord(_coord: Vector2):
+	coord = _coord
+	if tile_mode != TileSet.SINGLE_TILE and dict_id.count("-") > 0:
+		subtile_coord_label.show()
+		base_atlas_settings_cbox.show()
+		subtile_coord_label.text = str(coord)
+	else:
+		base_atlas_settings_cbox.hide()
+		subtile_coord_label.hide()
 
 func set_scene_name(new_scene_name: String):
 	scene_name_label.text = "Scene: "
@@ -73,13 +104,42 @@ func set_scene_name(new_scene_name: String):
 		scene_name_label.text += new_scene_name
 		scene_name_label.set("custom_colors/font_color",Color.white)
 
-func _on_scene_changed(scene:PackedScene):
-	if scene:
-		scene_path = scene.resource_path
+func update_scene_name():
+	if scene_settings and scene_settings.selected_scene:
+		scene_path = scene_settings.selected_scene.resource_path
 		set_scene_name(scene_path.get_file())
 	else:
 		set_scene_name("")
-	emit_signal("row_changed", tile_id, dict_id, scene)
+
+func _on_resource_changed(_resource: Resource):
+	if _resource and not _resource is PackedScene:
+		return
+	print(_resource)
+	if not scene_settings:
+		scene_settings = SceneSettings.new()
+		tts_dict[dict_id] = scene_settings
+	if undo_redo:
+		undo_redo.create_action("Set scene to tile")
+		undo_redo.add_do_property(editor_scene_picker,"edited_resource",_resource)
+		undo_redo.add_do_property(scene_settings,"selected_scene",_resource)
+		undo_redo.add_do_method(self,"update_scene_name",null)
+		undo_redo.add_undo_property(scene_settings,"selected_scene",scene_settings.selected_scene)
+		undo_redo.add_undo_property(editor_scene_picker,"edited_resource",scene_settings.selected_scene)
+		undo_redo.add_undo_method(self,"update_scene_name",null)
+		undo_redo.commit_action()
 
 func _on_scene_settings_pressed():
 	emit_signal("scene_settings_pressed",tile_id, dict_id, coord, tile_texture.texture, tile_texture.region_rect)
+
+func _on_base_atlas_settings_cbox_pressed():
+	var new_cbox_value: bool = base_atlas_settings_cbox.pressed
+	if not scene_settings:
+		scene_settings = SceneSettings.new()
+		tts_dict[dict_id] = scene_settings
+	if undo_redo:
+		undo_redo.create_action("Set value to use_base_autotile_settings")
+		undo_redo.add_do_property(scene_settings,"use_base_autotile_settings",new_cbox_value)
+		undo_redo.add_do_property(base_atlas_settings_cbox,"pressed",new_cbox_value)
+		undo_redo.add_undo_property(scene_settings,"use_base_autotile_settings",not new_cbox_value)
+		undo_redo.add_undo_property(base_atlas_settings_cbox,"pressed",not new_cbox_value)
+		undo_redo.commit_action()

@@ -1,4 +1,4 @@
-[gd_scene load_steps=6 format=2]
+[gd_scene load_steps=8 format=2]
 
 [ext_resource path="res://addons/spawner_tilemap/editor/tile_to_scene_row.gd" type="Script" id=1]
 [ext_resource path="res://addons/spawner_tilemap/editor/single_tile_stylebox.tres" type="StyleBox" id=2]
@@ -22,6 +22,12 @@ bg_color = Color( 1, 1, 1, 1 )
 corner_radius_top_right = 2
 corner_radius_bottom_right = 2
 
+[sub_resource type="StyleBoxEmpty" id=6]
+
+[sub_resource type="StyleBoxEmpty" id=5]
+content_margin_top = 5.0
+content_margin_bottom = 5.0
+
 [node name="TileToSceneRowTest" type="HFlowContainer"]
 margin_right = 535.0
 margin_bottom = 130.0
@@ -30,8 +36,9 @@ custom_constants/hseparation = 10
 script = ExtResource( 1 )
 
 [node name="TileTexture" type="NinePatchRect" parent="."]
+margin_top = 3.0
 margin_right = 90.0
-margin_bottom = 90.0
+margin_bottom = 93.0
 rect_min_size = Vector2( 90, 90 )
 mouse_filter = 1
 size_flags_horizontal = 4
@@ -45,7 +52,7 @@ __meta__ = {
 [node name="DataContainer" type="VBoxContainer" parent="."]
 margin_left = 100.0
 margin_right = 535.0
-margin_bottom = 90.0
+margin_bottom = 97.0
 size_flags_horizontal = 3
 custom_constants/separation = 5
 
@@ -73,6 +80,17 @@ custom_styles/normal = SubResource( 3 )
 text = "1000"
 align = 2
 
+[node name="SubtileCoordLabel" type="Label" parent="DataContainer/TileData"]
+visible = false
+margin_left = 69.0
+margin_top = 1.0
+margin_right = 220.0
+margin_bottom = 15.0
+size_flags_horizontal = 3
+custom_colors/font_color = Color( 1, 1, 1, 0.392157 )
+text = "(0,0)"
+valign = 1
+
 [node name="Control" type="Control" parent="DataContainer/TileData"]
 margin_left = 69.0
 margin_right = 347.0
@@ -90,23 +108,54 @@ custom_styles/normal = ExtResource( 2 )
 text = "SINGLE TILE"
 align = 2
 
-[node name="SceneDataAndSettings" type="HFlowContainer" parent="DataContainer"]
+[node name="DataContainer" type="VBoxContainer" parent="DataContainer"]
 margin_top = 26.0
 margin_right = 435.0
-margin_bottom = 46.0
+margin_bottom = 72.0
+size_flags_horizontal = 3
+custom_constants/separation = 0
+
+[node name="SceneDataAndSettings" type="HFlowContainer" parent="DataContainer/DataContainer"]
+margin_right = 435.0
+margin_bottom = 20.0
 size_flags_horizontal = 3
 
-[node name="SceneNameLabel" type="Label" parent="DataContainer/SceneDataAndSettings"]
+[node name="SceneNameLabel" type="Label" parent="DataContainer/DataContainer/SceneDataAndSettings"]
 margin_top = 3.0
 margin_right = 419.0
 margin_bottom = 17.0
 size_flags_horizontal = 3
 custom_colors/font_color = Color( 1, 1, 1, 1 )
+custom_styles/normal = SubResource( 6 )
 text = "Scene: PackedScene.tscn"
 valign = 1
 
-[node name="SceneSettingsButton" type="Button" parent="DataContainer/SceneDataAndSettings"]
+[node name="SceneSettingsButton" type="Button" parent="DataContainer/DataContainer/SceneDataAndSettings"]
 margin_left = 423.0
 margin_right = 435.0
 margin_bottom = 20.0
 hint_tooltip = "Change the settings for this scene to add custom data or change it's spawning process"
+
+[node name="FastSettings" type="HFlowContainer" parent="DataContainer/DataContainer"]
+margin_top = 20.0
+margin_right = 435.0
+margin_bottom = 46.0
+size_flags_horizontal = 3
+custom_constants/vseparation = 0
+custom_constants/hseparation = 0
+
+[node name="BaseAtlasSettingsCbox" type="CheckBox" parent="DataContainer/DataContainer/FastSettings"]
+margin_right = 222.0
+margin_bottom = 26.0
+focus_mode = 0
+size_flags_horizontal = 0
+custom_colors/font_color = Color( 1, 1, 1, 0.392157 )
+custom_styles/hover = SubResource( 5 )
+custom_styles/pressed = SubResource( 5 )
+custom_styles/focus = SubResource( 5 )
+custom_styles/disabled = SubResource( 5 )
+custom_styles/hover_pressed = SubResource( 5 )
+custom_styles/normal = SubResource( 5 )
+text = "Use base autotile/atlas settings"
+align = 1
+icon_align = 1

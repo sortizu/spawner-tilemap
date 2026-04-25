@@ -7,7 +7,7 @@ extends WindowDialog
 # DEPENDENCIES
 
 var tile_to_scene_row: PackedScene = preload("res://addons/spawner_tilemap/editor/tile_to_scene_row.tscn")
-var scene_settings: GDScript = preload("res://addons/spawner_tilemap/node/scene_settings.gd")
+const SceneSettings: GDScript = preload("res://addons/spawner_tilemap/node/scene_settings.gd")
 var editor_interface: EditorInterface
 var spawner_tilemap: SpawnerTileMap
 var undo_redo: UndoRedo
@@ -36,7 +36,7 @@ const _single_tile_stylebox: StyleBoxFlat = preload("res://addons/spawner_tilema
 const _autotile_tile_stylebox: StyleBoxFlat = preload("res://addons/spawner_tilemap/editor/auto_tile_stylebox.tres")
 const _atlas_tile_stylebox: StyleBoxFlat = preload("res://addons/spawner_tilemap/editor/atlas_tile_stylebox.tres")
 const tiles_per_page: int = 10
-enum FilterOptions {NONE, ASSIGNED_TILES, UNASSIGNED__TILES}
+enum FilterOptions {NONE, ASSIGNED_TILES, UNASSIGNED_TILES}
 
 # METHODS
 
@@ -78,7 +78,7 @@ func _notification(what: int):
 		clean_button.disconnect("pressed",self,"_on_ClearButton_pressed")
 
 ## Adds a row to the main container, which contains the image of the tile, the name of the scene and a PackedScene resource picker
-func set_row_data(_row_index: int,texture: Texture, region: Rect2, tile_id: int, dict_id: String, coord: Vector2, scene: PackedScene, tile_mode: int):
+func set_row_data(_row_index: int,texture: Texture, region: Rect2, tile_id: int, dict_id: String, coord: Vector2, scene_settings: SceneSettings, tile_mode: int):
 	var row: Control
 	if _row_index >= main_container.get_child_count():
 		for i in _row_index - main_container.get_child_count() + 1:
@@ -86,7 +86,6 @@ func set_row_data(_row_index: int,texture: Texture, region: Rect2, tile_id: int,
 			main_container.add_child(row)
 			row.connect("scene_settings_pressed",self,"on_scene_settings_pressed")
 			row.editor_scene_picker.connect("show_in_filesystem_selected",self,"queue_free")
-			row.connect("row_changed",self,"_on_row_changed")
 	else:
 		row = main_container.get_child(_row_index)
 		row.visible = true
@@ -94,14 +93,21 @@ func set_row_data(_row_index: int,texture: Texture, region: Rect2, tile_id: int,
 	if tile_mode == TileSet.SINGLE_TILE:
 		row.set_tilemode(tile_mode, "SINGLE TILE", _single_tile_stylebox)
 	elif tile_mode == TileSet.AUTO_TILE:
-		row.set_tilemode(tile_mode,"AUTO TILE", _autotile_tile_stylebox)
+		if dict_id.count("-")>0:
+			row.set_tilemode(tile_mode,"AUTO TILE", _autotile_tile_stylebox)
+		else:
+			row.set_tilemode(tile_mode,"BASE AUTO TILE", _autotile_tile_stylebox)
 	else:
-		row.set_tilemode(tile_mode, "ATLAS TILE", _atlas_tile_stylebox)
+		if dict_id.count("-")>0:
+			row.set_tilemode(tile_mode, "ATLAS TILE", _atlas_tile_stylebox)
+		else:
+			row.set_tilemode(tile_mode, "BASE ATLAS TILE", _atlas_tile_stylebox)
 	row.change_texture(texture, region)
 	row.set_id(tile_id, dict_id)
 	row.coord = coord
-	row.editor_scene_picker.edited_resource = scene
-	row.editor_scene_picker.undo_redo = undo_redo
+	row.undo_redo = undo_redo
+	row.scene_settings = scene_settings
+	row.tts_dict = spawner_tilemap.tile_to_scene_dictionary.dictionary
 	row.scene_settings_button.icon = editor_interface.get_base_control().get_icon("TripleBar","EditorIcons")
 
 ## Shows all the information inside the [tile_to_scene_dictionary] stored by the SpawnTileMap using rows that are created by [set_row_data]
@@ -112,7 +118,7 @@ func show_rows_in_page(_selected_page: int, _search_text: String = "*", _filter_
 			_row.visible = false
 		var tile_to_scene_dictionary = spawner_tilemap.tile_to_scene_dictionary
 		var _tile_mode: int
-		var _scene_data: Array
+		var _scene_settings: SceneSettings 
 		var _texture: Texture
 		var _region: Rect2
 		var _icount: int
@@ -132,29 +138,45 @@ func show_rows_in_page(_selected_page: int, _search_text: String = "*", _filter_
 				_subtile_size = tile_set.autotile_get_size(tile_id)
 				_icount = _region.size.x/_subtile_size.x
 				_jcount = _region.size.y/_subtile_size.y
-				for j in _jcount:
-					for i in _icount:
+				var j: int = 0
+				var i: int = 0
+				var show_base_autotile: bool = true
+				while j < _jcount:
+					i = 0
+					while i < _icount:
 						if _page_count > _selected_page and not update_total_pages:
 							stop_autotile_loop = true
 							break
-						_dict_id = "%d-%d-%d"%[tile_id,i,j]
+						if show_base_autotile:
+							_dict_id = str(tile_id)
+						else:
+							_dict_id = "%d-%d-%d"%[tile_id,i,j]
 						if not ignore_filters:
-							_scene_data = tile_to_scene_dictionary.dictionary.get(_dict_id,[null,null])
+							_scene_settings = tile_to_scene_dictionary.dictionary.get(_dict_id)
 							_searched = true
-							filtered_by_text =  _dict_id.matchn(_search_text) or (_scene_data[0] and _scene_data[0].resource_path.get_file().matchn(_search_text))
+							filtered_by_text =  _dict_id.matchn(_search_text) or (_scene_settings and _scene_settings.selected_scene.resource_path.get_file().matchn(_search_text))
 							if _filter_option == FilterOptions.ASSIGNED_TILES:
-								filtered_by_option = _scene_data[0] != null
-							elif _filter_option == FilterOptions.UNASSIGNED__TILES:
-								filtered_by_option = _scene_data[0] == null
+								filtered_by_option = _scene_settings.selected_scene != null
+							elif _filter_option == FilterOptions.UNASSIGNED_TILES:
+								filtered_by_option = _scene_settings.selected_scene == null
 							else:
 								filtered_by_option = true
 						if ignore_filters or (filtered_by_text and filtered_by_option):
 							if not _searched:
-								_scene_data = tile_to_scene_dictionary.dictionary.get(_dict_id,[null,null])
+								_scene_settings = tile_to_scene_dictionary.dictionary.get(_dict_id,null)
 								_searched = false
 							if _page_count == _selected_page:
-								set_row_data(_row_index, tile_set.tile_get_texture(tile_id), Rect2(_region.position.x + i*_subtile_size.x,_region.position.y + j*_subtile_size.y,_subtile_size.x,_subtile_size.y), tile_id, _dict_id,Vector2(i,j),_scene_data[0],_tile_mode)
-						else: continue
+								if show_base_autotile:
+									set_row_data(_row_index, tile_set.tile_get_texture(tile_id), _region, tile_id, _dict_id,Vector2(i,j),_scene_settings,_tile_mode)
+								else:
+									set_row_data(_row_index, tile_set.tile_get_texture(tile_id), Rect2(_region.position.x + i*_subtile_size.x,_region.position.y + j*_subtile_size.y,_subtile_size.x,_subtile_size.y), tile_id, _dict_id,Vector2(i,j),_scene_settings,_tile_mode)
+							if show_base_autotile:
+								show_base_autotile = false
+							else:
+								i += 1
+						else: 
+							i += 1
+							continue
 						_row_index += 1
 						if _row_index == tiles_per_page:
 							_row_index = 0
@@ -162,25 +184,26 @@ func show_rows_in_page(_selected_page: int, _search_text: String = "*", _filter_
 					if stop_autotile_loop: 
 						stop_autotile_loop = false
 						break
+					j += 1
 			else:
 				if _page_count > _selected_page and not update_total_pages:
 					break
 				if not ignore_filters:
-					_scene_data = tile_to_scene_dictionary.dictionary.get(str(tile_id),[null,null])
+					_scene_settings = tile_to_scene_dictionary.dictionary.get(str(tile_id))
 					_searched = true
-					filtered_by_text =  str(tile_id).matchn(_search_text) or (_scene_data[0] and _scene_data[0].resource_path.get_file().matchn(_search_text))
+					filtered_by_text =  str(tile_id).matchn(_search_text) or (_scene_settings and _scene_settings.selected_scene.resource_path.get_file().matchn(_search_text))
 					if _filter_option == FilterOptions.ASSIGNED_TILES:
-						filtered_by_option = _scene_data[0] != null
-					elif _filter_option == FilterOptions.UNASSIGNED__TILES:
-						filtered_by_option = _scene_data[0] == null
+						filtered_by_option = _scene_settings.selected_scene != null
+					elif _filter_option == FilterOptions.UNASSIGNED_TILES:
+						filtered_by_option = _scene_settings.selected_scene == null
 					else:
 						filtered_by_option = true
 				if ignore_filters or (filtered_by_text and filtered_by_option):
 					if not _searched:
-						_scene_data = tile_to_scene_dictionary.dictionary.get(str(tile_id),[null,null])
+						_scene_settings = tile_to_scene_dictionary.dictionary.get(str(tile_id))
 						_searched = false
 					if _page_count == _selected_page:
-						set_row_data(_row_index, tile_set.tile_get_texture(tile_id), _region, tile_id, str(tile_id), Vector2(0,0), _scene_data[0], _tile_mode)
+						set_row_data(_row_index, tile_set.tile_get_texture(tile_id), _region, tile_id, str(tile_id), Vector2(0,0), _scene_settings, _tile_mode)
 				else: continue
 				_row_index += 1
 				if _row_index == tiles_per_page:
@@ -196,14 +219,12 @@ func show_rows_in_page(_selected_page: int, _search_text: String = "*", _filter_
 ## Creates a custom resource to add data to each scene and to customize their spawning process
 func on_scene_settings_pressed(_tile_id: int, _dict_id: String, coord: Vector2, _texture: Texture, _region: Rect2):
 	var tile_to_scene_dictionary = spawner_tilemap.tile_to_scene_dictionary
-	var _scene_data: Array = tile_to_scene_dictionary.dictionary.get(_dict_id,[null,null])
-	var _scene_settings: Resource = _scene_data[1]
+	var _scene_settings: SceneSettings = tile_to_scene_dictionary.dictionary.get(_dict_id)
 	if not _scene_settings:
-		_scene_settings = scene_settings.new()
+		_scene_settings = SceneSettings.new()
 		_scene_settings.tile_mode = spawner_tilemap.tile_set.tile_get_tile_mode(_tile_id) 
 		_scene_settings.subtile_coord = coord
-		_scene_data[1] = _scene_settings
-		tile_to_scene_dictionary.dictionary[_dict_id] = _scene_data
+		tile_to_scene_dictionary.dictionary[_dict_id] = _scene_settings
 	_scene_settings.tile_id = _tile_id
 	if not _scene_settings.tile:
 		var atlas_texture: AtlasTexture = AtlasTexture.new()
@@ -212,16 +233,6 @@ func on_scene_settings_pressed(_tile_id: int, _dict_id: String, coord: Vector2, 
 		_scene_settings.set_tile(atlas_texture)
 	editor_interface.edit_resource(_scene_settings)
 	queue_free()
-
-## Updates the [tile_to_scene_dictionary] when an scene is changed inside a row
-func _on_row_changed(_tile_id: int, _dict_id: String, _scene: PackedScene) -> void:
-	var _dictionary: Dictionary = spawner_tilemap.tile_to_scene_dictionary.dictionary
-	var _scene_data: Array = _dictionary.get(_dict_id,[null,null])
-	var _new_scene_data: Array = [_scene, _scene_data[1]]
-	if not (_new_scene_data[0] or _new_scene_data[1]):
-		_dictionary.erase(_dict_id)
-		return
-	_dictionary[_dict_id] = _new_scene_data
 
 ## Filters the rows based on the tile id and the name of the scene
 func _on_search_text_entered(new_text: String = search_bar.text) -> void:
@@ -239,8 +250,7 @@ func _on_filter_selected(index: int):
 
 ## Removes the conection between [row_changed] and every row added to the main container
 func _on_child_exited_in_main_container(node: Node):
-	if node.has_signal("row_changed") and node.is_connected("row_changed",self,"_on_row_changed"):
-		node.disconnect("row_changed",self,"_on_row_changed")
+	if node.has_signal("scene_settings_pressed") and node.is_connected("scene_settings_pressed",self,"on_scene_settings_pressed"):
 		node.disconnect("scene_settings_pressed",self,"on_scene_settings_pressed")
 
 func _on_WindowDialog_popup_hide():

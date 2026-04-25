@@ -12,9 +12,11 @@ var subtile_coord: Vector2
 
 # SCENE SETTINGS
 
+var selected_scene: PackedScene
 var metadata: Dictionary
 var instance_mode: int = 3
 var position_zero: bool
+var use_base_autotile_settings: bool
 var default_parameters: int
 var path_to_target: String
 var method_name: String
@@ -55,6 +57,13 @@ func _get_property_list():
 		usage = PROPERTY_USAGE_CATEGORY
 	})
 	properties.append({
+		name="selected_scene",
+		type=TYPE_OBJECT,
+		hint_string = "PackedScene",
+		hint =  PROPERTY_HINT_RESOURCE_TYPE,
+		usage = PROPERTY_USAGE_STORAGE,
+	})
+	properties.append({
 		name="metadata",
 		type=TYPE_DICTIONARY,
 		usage = PROPERTY_USAGE_DEFAULT,
@@ -63,6 +72,11 @@ func _get_property_list():
 		name="clean_tile",
 		type=TYPE_BOOL,
 		usage = PROPERTY_USAGE_DEFAULT,
+	})
+	properties.append({
+		name="use_base_autotile_settings",
+		type=TYPE_BOOL,
+		usage = PROPERTY_USAGE_NOEDITOR,
 	})
 	properties.append({
 		name="instance_mode",

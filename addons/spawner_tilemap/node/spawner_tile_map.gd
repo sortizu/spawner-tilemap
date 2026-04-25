@@ -47,6 +47,9 @@ func _ready() -> void:
 		# warning-ignore:unsafe_property_access
 		new_tile_to_scene_dict.loaded_dictionary=true
 		set_tile_to_scene_dict(new_tile_to_scene_dict)
+	else:
+		pass
+			
 	if not Engine.editor_hint:
 		match instance_mode:
 			0:
