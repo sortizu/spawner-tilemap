@@ -104,6 +104,7 @@ func set_row_data(_row_index: int,texture: Texture, region: Rect2, tile_id: int,
 			row.set_tilemode(tile_mode, "BASE ATLAS TILE", _atlas_tile_stylebox)
 	row.change_texture(texture, region)
 	row.set_id(tile_id, dict_id)
+	row.spawner_tilemap = spawner_tilemap
 	row.coord = coord
 	row.undo_redo = undo_redo
 	row.scene_settings = scene_settings
@@ -225,6 +226,7 @@ func on_scene_settings_pressed(_tile_id: int, _dict_id: String, coord: Vector2, 
 		_scene_settings.tile_mode = spawner_tilemap.tile_set.tile_get_tile_mode(_tile_id) 
 		_scene_settings.subtile_coord = coord
 		tile_to_scene_dictionary.dictionary[_dict_id] = _scene_settings
+	
 	_scene_settings.tile_id = _tile_id
 	if not _scene_settings.tile:
 		var atlas_texture: AtlasTexture = AtlasTexture.new()

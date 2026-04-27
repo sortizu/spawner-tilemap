@@ -15,6 +15,7 @@ var coord: Vector2 setget set_coord
 var undo_redo: UndoRedo
 var tts_dict: Dictionary setget set_tts_dict
 var scene_settings: SceneSettings setget set_scene_settings
+var spawner_tilemap: SpawnerTileMap
 
 # Classes
 
@@ -114,9 +115,11 @@ func update_scene_name():
 func _on_resource_changed(_resource: Resource):
 	if _resource and not _resource is PackedScene:
 		return
-	print(_resource)
 	if not scene_settings:
 		scene_settings = SceneSettings.new()
+		scene_settings.subtile_coord = coord
+		scene_settings.tile_mode = spawner_tilemap.tile_set.tile_get_tile_mode(tile_id) 
+		scene_settings.tile_id = tile_id
 		tts_dict[dict_id] = scene_settings
 	if undo_redo:
 		undo_redo.create_action("Set scene to tile")
@@ -135,6 +138,9 @@ func _on_base_atlas_settings_cbox_pressed():
 	var new_cbox_value: bool = base_atlas_settings_cbox.pressed
 	if not scene_settings:
 		scene_settings = SceneSettings.new()
+		scene_settings.subtile_coord = coord
+		scene_settings.tile_mode = spawner_tilemap.tile_set.tile_get_tile_mode(tile_id) 
+		scene_settings.tile_id = tile_id
 		tts_dict[dict_id] = scene_settings
 	if undo_redo:
 		undo_redo.create_action("Set value to use_base_autotile_settings")

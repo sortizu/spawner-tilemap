@@ -137,7 +137,6 @@ func instance_scenes() -> Array:
 	var _tile_id_str: String
 	var new_scene_instance: Node
 	var _scene_data: Array
-	var _packed_scene: PackedScene
 	var _scene_settings: SceneSettings
 	var _instances_scene_settings: Array
 	var _instanced_scenes: Array
@@ -155,20 +154,17 @@ func instance_scenes() -> Array:
 		_tile_id = get_cell(_cell_pos.x,_cell_pos.y)
 		if tile_set.tile_get_tile_mode(_tile_id) == TileSet.SINGLE_TILE:
 			_tile_id_str = str(_tile_id)
-			_scene_data = tile_to_scene_dictionary.get_scene_by_tile_id(_tile_id_str)
+			_scene_settings = tile_to_scene_dictionary.get_scene_settings_by_tile_id(_tile_id_str)
 		else:
 			_subtile_coord = get_cell_autotile_coord(_cell_pos.x,_cell_pos.y)
 			_tile_id_str = str(_tile_id)+"-"+str(_subtile_coord.x)+"-"+str(_subtile_coord.y)
-			_scene_data = tile_to_scene_dictionary.get_scene_by_tile_id(_tile_id_str)
-		if not _scene_data.empty():
-			_packed_scene = _scene_data[0]
-			_scene_settings = _scene_data[1]
-		else:
-			_packed_scene = null
-			_scene_settings = null
+			_scene_settings = tile_to_scene_dictionary.get_scene_settings_by_tile_id(_tile_id_str)
+			# If the tile has use_base_autotile_settings enabled, it will use the base tile (autotile/atlas) scene settings (scene, instance, call settings)
+			if _scene_settings and _scene_settings.use_base_autotile_settings:
+				_scene_settings = tile_to_scene_dictionary.get_scene_settings_by_tile_id(str(_tile_id))
 		if _scene_settings and _scene_settings.instance_mode == 0:
 			continue
-		if _packed_scene:
+		if _scene_settings and _scene_settings.selected_scene:
 			_single_instance = false
 			new_scene_instance = null
 			if _scene_settings:
@@ -177,15 +173,21 @@ func instance_scenes() -> Array:
 				if _scene_settings.instance_mode == 1:
 					new_scene_instance = _scene_settings.single_instance
 				if _scene_settings.instance_mode == 2:
-					new_scene_instance = single_global_instances.get(_packed_scene)
+					new_scene_instance = single_global_instances.get(_scene_settings.selected_scene)
 					if new_scene_instance and not _scene_settings.single_instance: _instances_scene_settings.append(_scene_settings)
 				if new_scene_instance:
 					_scene_settings.single_instance = new_scene_instance
 					if _scene_settings.call_once:
-						_scene_settings.add_cell_pos(_cell_pos)
+						if _scene_settings.default_parameters & 1:
+							_scene_settings.add_cell_pos(_cell_pos)
+						if tile_set.tile_get_tile_mode(_tile_id) != TileSet.SINGLE_TILE and _scene_settings.default_parameters & 1000:
+							_scene_settings.add_cell_subcoord(_subtile_coord)
+						if (tile_set.tile_get_tile_mode(_tile_id) == TileSet.SINGLE_TILE and _scene_settings.default_parameters & 1000) or \
+							(tile_set.tile_get_tile_mode(_tile_id) != TileSet.SINGLE_TILE and _scene_settings.default_parameters & 10000):
+								_scene_settings.add_cell_axis_setting(Vector3(is_cell_x_flipped(_cell_pos.x,_cell_pos.y),is_cell_y_flipped(_cell_pos.x,_cell_pos.y),is_cell_transposed(_cell_pos.x,_cell_pos.y)))
 						continue
 			if not (new_scene_instance and is_instance_valid(new_scene_instance)):
-				new_scene_instance = _packed_scene.instance()
+				new_scene_instance = _scene_settings.selected_scene.instance()
 				if not _scene_settings or not _scene_settings.position_zero:
 					if new_scene_instance is Node2D:
 						new_scene_instance.position = Vector2(_cell_pos.x*cell_size.x,_cell_pos.y*cell_size.y)
@@ -209,13 +211,15 @@ func instance_scenes() -> Array:
 						_scene_settings.single_instance = new_scene_instance
 						_single_instance = true
 					if _scene_settings.instance_mode == 2:
-						single_global_instances[_packed_scene] = new_scene_instance
+						single_global_instances[_scene_settings.selected_scene] = new_scene_instance
 						_scene_settings.single_instance = new_scene_instance
 						_single_instance = true
 					if _single_instance and _scene_settings.call_once:
 						_instances_scene_settings.append(_scene_settings)
 						if _scene_settings.default_parameters & 1:
 							_scene_settings.add_cell_pos(_cell_pos)
+						if tile_set.tile_get_tile_mode(_tile_id) != TileSet.SINGLE_TILE and _scene_settings.default_parameters & 1000:
+							_scene_settings.add_cell_subcoord(_subtile_coord)
 						if (tile_set.tile_get_tile_mode(_tile_id) == TileSet.SINGLE_TILE and _scene_settings.default_parameters & 1000) or \
 							(tile_set.tile_get_tile_mode(_tile_id) != TileSet.SINGLE_TILE and _scene_settings.default_parameters & 10000):
 								_scene_settings.add_cell_axis_setting(Vector3(is_cell_x_flipped(_cell_pos.x,_cell_pos.y),is_cell_y_flipped(_cell_pos.x,_cell_pos.y),is_cell_transposed(_cell_pos.x,_cell_pos.y)))
@@ -292,11 +296,13 @@ func call_to_target_at_end(_scene_settings: SceneSettings):
 		params.append(_scene_settings.tile_id)
 	if _scene_settings.default_parameters & 0100:
 		params.append(_scene_settings.metadata)
+	print(_scene_settings.tile_id)
 	if tile_set.tile_get_tile_mode(_scene_settings.tile_id) != TileSet.SINGLE_TILE:
 		if _scene_settings.default_parameters & 1000:
-			params.append(_scene_settings.subtile_coord)
+			params.append(_scene_settings.cell_subcoord_pool)
 		if _scene_settings.default_parameters & 10000:
 			params.append(_scene_settings.cell_axis_settings_pool)
+		
 	else:
 		if _scene_settings.default_parameters & 1000:
 			params.append(_scene_settings.cell_axis_settings_pool)
