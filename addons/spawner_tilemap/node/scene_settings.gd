@@ -175,7 +175,7 @@ func add_cell_subcoord(_coord: Vector2):
 		cell_subcoord_pool.resize(len(cell_subcoord_pool) + array_pool_size)
 	elif cell_subcoord_pool.size() == 0:
 		cell_subcoord_pool.resize(array_pool_size)
-	cell_subcoord_pool.set(axis_chunk * array_pool_size + subcoord_sub_index, _coord)
+	cell_subcoord_pool.set(subcoord_chunk * array_pool_size + subcoord_sub_index, _coord)
 	subcoord_sub_index += 1
 
 func trim():
