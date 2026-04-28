@@ -157,9 +157,12 @@ func show_rows_in_page(_selected_page: int, _search_text: String = "*", _filter_
 							_searched = true
 							filtered_by_text =  _dict_id.matchn(_search_text) or (_scene_settings and _scene_settings.selected_scene.resource_path.get_file().matchn(_search_text))
 							if _filter_option == FilterOptions.ASSIGNED_TILES:
-								filtered_by_option = _scene_settings.selected_scene != null
+								filtered_by_option = _scene_settings and _scene_settings.selected_scene != null
 							elif _filter_option == FilterOptions.UNASSIGNED_TILES:
-								filtered_by_option = _scene_settings.selected_scene == null
+								print(_dict_id,show_base_autotile)
+								if _scene_settings:
+									print(_scene_settings.selected_scene)
+								filtered_by_option = not _scene_settings or _scene_settings.selected_scene == null
 							else:
 								filtered_by_option = true
 						if ignore_filters or (filtered_by_text and filtered_by_option):
@@ -177,6 +180,8 @@ func show_rows_in_page(_selected_page: int, _search_text: String = "*", _filter_
 								i += 1
 						else: 
 							i += 1
+							if show_base_autotile:
+								show_base_autotile = false
 							continue
 						_row_index += 1
 						if _row_index == tiles_per_page:
@@ -194,9 +199,9 @@ func show_rows_in_page(_selected_page: int, _search_text: String = "*", _filter_
 					_searched = true
 					filtered_by_text =  str(tile_id).matchn(_search_text) or (_scene_settings and _scene_settings.selected_scene.resource_path.get_file().matchn(_search_text))
 					if _filter_option == FilterOptions.ASSIGNED_TILES:
-						filtered_by_option = _scene_settings.selected_scene != null
+						filtered_by_option = _scene_settings and _scene_settings.selected_scene != null
 					elif _filter_option == FilterOptions.UNASSIGNED_TILES:
-						filtered_by_option = _scene_settings.selected_scene == null
+						filtered_by_option = _scene_settings and _scene_settings.selected_scene == null
 					else:
 						filtered_by_option = true
 				if ignore_filters or (filtered_by_text and filtered_by_option):
