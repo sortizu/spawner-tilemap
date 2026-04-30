@@ -121,16 +121,6 @@ func _get_property_list():
 		usage = PROPERTY_USAGE_DEFAULT
 	})
 	properties.append({
-		name="subtile_coord",
-		type=TYPE_VECTOR2,
-		usage = PROPERTY_USAGE_NOEDITOR
-	})
-	properties.append({
-		name="tile_mode",
-		type=TYPE_INT,
-		usage = PROPERTY_USAGE_NOEDITOR
-	})
-	properties.append({
 		name="cell_pos_pool",
 		type=TYPE_VECTOR2_ARRAY,
 		usage = PROPERTY_USAGE_NO_INSTANCE_STATE

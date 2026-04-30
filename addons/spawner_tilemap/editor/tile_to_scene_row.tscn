@@ -28,7 +28,7 @@ corner_radius_bottom_right = 2
 content_margin_top = 5.0
 content_margin_bottom = 5.0
 
-[node name="TileToSceneRowTest" type="HFlowContainer"]
+[node name="TileToSceneRow" type="HFlowContainer"]
 margin_right = 535.0
 margin_bottom = 130.0
 mouse_filter = 1
@@ -130,11 +130,12 @@ custom_styles/normal = SubResource( 6 )
 text = "Scene: PackedScene.tscn"
 valign = 1
 
-[node name="SceneSettingsButton" type="Button" parent="DataContainer/DataContainer/SceneDataAndSettings"]
+[node name="SceneSettingsButton" type="MenuButton" parent="DataContainer/DataContainer/SceneDataAndSettings"]
 margin_left = 423.0
 margin_right = 435.0
 margin_bottom = 20.0
 hint_tooltip = "Change the settings for this scene to add custom data or change it's spawning process"
+items = [ "Change settings", null, 0, false, false, 0, 0, null, "", false, "Copy settings", null, 0, false, false, 1, 0, null, "", false, "Paste settings", null, 0, false, false, 2, 0, null, "", false ]
 
 [node name="FastSettings" type="HFlowContainer" parent="DataContainer/DataContainer"]
 margin_top = 20.0

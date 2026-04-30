@@ -38,6 +38,9 @@ const _atlas_tile_stylebox: StyleBoxFlat = preload("res://addons/spawner_tilemap
 const tiles_per_page: int = 10
 enum FilterOptions {NONE, ASSIGNED_TILES, UNASSIGNED_TILES}
 
+signal copy_scene_settings_pressed(_copied_scene_settings)
+signal paste_scene_settings_pressed(_previous_scene_settings)
+
 # METHODS
 
 ## Updates the icons for each button and add the rows that show information from the [tile_to_scene_dictionary]
@@ -83,8 +86,11 @@ func set_row_data(_row_index: int,texture: Texture, region: Rect2, tile_id: int,
 	if _row_index >= main_container.get_child_count():
 		for i in _row_index - main_container.get_child_count() + 1:
 			row = tile_to_scene_row.instance()
+			row.editor_interface = editor_interface
 			main_container.add_child(row)
 			row.connect("scene_settings_pressed",self,"on_scene_settings_pressed")
+			row.connect("copy_scene_settings_pressed",self,"on_copy_scene_settings_pressed")
+			row.connect("paste_scene_settings_pressed",self,"on_paste_scene_settings_pressed")
 			row.editor_scene_picker.connect("show_in_filesystem_selected",self,"queue_free")
 	else:
 		row = main_container.get_child(_row_index)
@@ -107,9 +113,15 @@ func set_row_data(_row_index: int,texture: Texture, region: Rect2, tile_id: int,
 	row.spawner_tilemap = spawner_tilemap
 	row.coord = coord
 	row.undo_redo = undo_redo
-	row.scene_settings = scene_settings
 	row.tts_dict = spawner_tilemap.tile_to_scene_dictionary.dictionary
-	row.scene_settings_button.icon = editor_interface.get_base_control().get_icon("TripleBar","EditorIcons")
+	row.scene_settings = scene_settings
+
+## TODO Documentation
+func update_scene_settings_in_row(updated_scene_settings: SceneSettings, row: Control):
+	undo_redo.create_action("Paste scene settings")
+	undo_redo.add_do_method(row,"set_scene_settings",updated_scene_settings,true)
+	undo_redo.add_undo_method(row,"set_scene_settings",row.scene_settings,true)
+	undo_redo.commit_action()
 
 ## Shows all the information inside the [tile_to_scene_dictionary] stored by the SpawnTileMap using rows that are created by [set_row_data]
 func show_rows_in_page(_selected_page: int, _search_text: String = "*", _filter_option: int = -1, update_total_pages: bool = false, ignore_filters: bool = true):
@@ -228,10 +240,9 @@ func on_scene_settings_pressed(_tile_id: int, _dict_id: String, coord: Vector2, 
 	var _scene_settings: SceneSettings = tile_to_scene_dictionary.dictionary.get(_dict_id)
 	if not _scene_settings:
 		_scene_settings = SceneSettings.new()
-		_scene_settings.tile_mode = spawner_tilemap.tile_set.tile_get_tile_mode(_tile_id) 
-		_scene_settings.subtile_coord = coord
 		tile_to_scene_dictionary.dictionary[_dict_id] = _scene_settings
-	
+	_scene_settings.tile_mode = spawner_tilemap.tile_set.tile_get_tile_mode(_tile_id) 
+	_scene_settings.subtile_coord = coord
 	_scene_settings.tile_id = _tile_id
 	if not _scene_settings.tile:
 		var atlas_texture: AtlasTexture = AtlasTexture.new()
@@ -240,6 +251,12 @@ func on_scene_settings_pressed(_tile_id: int, _dict_id: String, coord: Vector2, 
 		_scene_settings.set_tile(atlas_texture)
 	editor_interface.edit_resource(_scene_settings)
 	queue_free()
+
+func on_copy_scene_settings_pressed(_copied_scene_settings: SceneSettings, row: Control):
+	emit_signal("copy_scene_settings_pressed",_copied_scene_settings,row)
+
+func on_paste_scene_settings_pressed(_previous_scene_settings: SceneSettings, row: Control):
+	emit_signal("paste_scene_settings_pressed",_previous_scene_settings,row)
 
 ## Filters the rows based on the tile id and the name of the scene
 func _on_search_text_entered(new_text: String = search_bar.text) -> void:
@@ -259,6 +276,8 @@ func _on_filter_selected(index: int):
 func _on_child_exited_in_main_container(node: Node):
 	if node.has_signal("scene_settings_pressed") and node.is_connected("scene_settings_pressed",self,"on_scene_settings_pressed"):
 		node.disconnect("scene_settings_pressed",self,"on_scene_settings_pressed")
+		node.disconnect("copy_scene_settings_pressed",self,"on_copy_scene_settings_pressed")
+		node.disconnect("paste_scene_settings_pressed",self,"on_paste_scene_settings_pressed")
 
 func _on_WindowDialog_popup_hide():
 	queue_free()

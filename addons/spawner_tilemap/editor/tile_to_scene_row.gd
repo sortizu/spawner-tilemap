@@ -16,6 +16,7 @@ var undo_redo: UndoRedo
 var tts_dict: Dictionary setget set_tts_dict
 var scene_settings: SceneSettings setget set_scene_settings
 var spawner_tilemap: SpawnerTileMap
+var editor_interface: EditorInterface
 
 # Classes
 
@@ -28,25 +29,32 @@ onready var id_value_label: Label = $DataContainer/TileData/IdValueLabel
 onready var scene_name_label = $DataContainer/DataContainer/SceneDataAndSettings/SceneNameLabel
 onready var data_container: Control = $DataContainer
 onready var tile_texture: NinePatchRect = $TileTexture
-onready var scene_settings_button = $DataContainer/DataContainer/SceneDataAndSettings/SceneSettingsButton
+onready var scene_settings_button: MenuButton = $DataContainer/DataContainer/SceneDataAndSettings/SceneSettingsButton
 onready var tile_mode_label: Label = $DataContainer/TileData/TileModeLabel
 onready var subtile_coord_label = $DataContainer/TileData/SubtileCoordLabel
 onready var base_atlas_settings_cbox = $DataContainer/DataContainer/FastSettings/BaseAtlasSettingsCbox
 
 # SIGNALS
 
-signal row_changed(_tile_id, _dict_id, scene)
-signal scene_settings_pressed(_tile_id, _dict_id, texture,region)
+signal scene_settings_pressed(_tile_id, _dict_id, _texture,_region)
+signal copy_scene_settings_pressed(_copied_scene_settings, _row)
+signal paste_scene_settings_pressed(_previous_scene_settings,_row)
 
 # METHODS
 
 func _ready() -> void:
 	if Engine.editor_hint:
+		if editor_interface:
+			scene_settings_button.icon = editor_interface.get_base_control().get_icon("GuiTabMenu","EditorIcons")
 		editor_scene_picker = EditorScenePicker.new()
 		data_container.add_child(editor_scene_picker)
 		editor_scene_picker.connect("resource_changed",self,"_on_resource_changed")
-		scene_settings_button.connect("pressed",self,"_on_scene_settings_pressed")
+		scene_settings_button.get_popup().connect("id_pressed",self,"_on_popup_menu_id_pressed")
 		base_atlas_settings_cbox.connect("pressed",self,"_on_base_atlas_settings_cbox_pressed")
+
+func _notification(what):
+	if what == NOTIFICATION_EXIT_TREE:
+		scene_settings_button.get_popup().disconnect("id_pressed",self,"_on_popup_menu_id_pressed")
 
 func set_tilemode(_tile_mode: int, _tile_mode_name: String, _style_box: StyleBoxFlat):
 	tile_mode_label.set("custom_styles/normal",_style_box)
@@ -59,20 +67,19 @@ func set_autotile_checkbox_value(cbox_value):
 func set_tts_dict(new_tts_dict: Dictionary):
 	tts_dict = new_tts_dict
 
-func _notification(what):
-	if what  == NOTIFICATION_EXIT_TREE:
-		scene_settings_button.disconnect("pressed",self,"_on_scene_settings_pressed")
-
 func change_texture(new_texture: Texture, rect: Rect2):
 	tile_texture.texture = new_texture
 	tile_texture.region_rect = rect
 
-func set_scene_settings(_new_scene_settings):
+func set_scene_settings(_new_scene_settings, update_dict: bool = false):
 	scene_settings = _new_scene_settings
 	if scene_settings:
+		if update_dict: tts_dict[dict_id] = scene_settings
+		(scene_settings_button.get_popup() as PopupMenu).set_item_disabled(1,false)
 		base_atlas_settings_cbox.pressed = scene_settings.use_base_autotile_settings
 		editor_scene_picker.edited_resource = scene_settings.selected_scene
 	else:
+		(scene_settings_button.get_popup() as PopupMenu).set_item_disabled(1,true)
 		base_atlas_settings_cbox.pressed = false
 		editor_scene_picker.edited_resource = null
 	update_scene_name()
@@ -131,8 +138,14 @@ func _on_resource_changed(_resource: Resource):
 		undo_redo.add_undo_method(self,"update_scene_name",null)
 		undo_redo.commit_action()
 
-func _on_scene_settings_pressed():
-	emit_signal("scene_settings_pressed",tile_id, dict_id, coord, tile_texture.texture, tile_texture.region_rect)
+func _on_popup_menu_id_pressed(id: int):
+	match id:
+		0:
+			emit_signal("scene_settings_pressed",tile_id, dict_id, coord, tile_texture.texture, tile_texture.region_rect)
+		1:
+			emit_signal("copy_scene_settings_pressed",scene_settings, self)
+		_:
+			emit_signal("paste_scene_settings_pressed",scene_settings, self)
 
 func _on_base_atlas_settings_cbox_pressed():
 	var new_cbox_value: bool = base_atlas_settings_cbox.pressed

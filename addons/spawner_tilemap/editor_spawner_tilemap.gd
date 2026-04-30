@@ -1,5 +1,7 @@
 extends EditorInspectorPlugin
 
+const SceneSettings: GDScript = preload("res://addons/spawner_tilemap/node/scene_settings.gd")
+
 # DEPENDENCIES
 
 var manage_scenes_buttons: PackedScene = preload("res://addons/spawner_tilemap/node/manage_scenes_buttons.tscn")
@@ -10,6 +12,9 @@ var buttons: Control
 var edit_scenes_button: Button
 var clean_scenes_button: Button
 var spawn_scenes_button: Button
+
+var copied_scene_settings: SceneSettings
+var editor: WindowDialog
 
 # METHODS
 
@@ -59,13 +64,22 @@ func _on_clean_scenes_pressed(buttons, spawner_tilemap: SpawnerTileMap):
 	undo_redo.commit_action()
 
 func _show_tile_to_scene_editor(spawner_tilemap: SpawnerTileMap):
-	var editor = tile_to_scene_editor.instance()
+	editor = tile_to_scene_editor.instance()
+	editor.connect("copy_scene_settings_pressed",self,"_on_copy_scene_settings_pressed")
+	editor.connect("paste_scene_settings_pressed",self,"_on_paste_scene_settings_pressed")
+#	editor.connect("modal_closed",self,"_on_editor_closed")
 	editor.editor_interface = editor_interface
 	editor.undo_redo = undo_redo
 	editor.spawner_tilemap = spawner_tilemap
 	editor_interface.get_base_control().add_child(editor)
 	editor.popup_centered(editor.rect_min_size)
 	editor.grab_focus()
+
+func _on_paste_scene_settings_pressed(_scene_settings: SceneSettings, row):
+	editor.update_scene_settings_in_row(copied_scene_settings,row)
+
+func _on_copy_scene_settings_pressed(_scene_settings: SceneSettings, row):
+	copied_scene_settings = _scene_settings.duplicate() as SceneSettings
 
 func _on_buttons_removed():
 	if clean_scenes_button and clean_scenes_button.is_connected("pressed",self,"_on_clean_scenes_pressed"):
@@ -75,3 +89,9 @@ func _on_buttons_removed():
 	if spawn_scenes_button and spawn_scenes_button.is_connected("pressed",self,"_on_spawn_scenes_pressed"):
 		spawn_scenes_button.disconnect("pressed",self,"_on_spawn_scenes_pressed")
 	buttons.disconnect("tree_exiting",self,"_on_buttons_removed")
+
+func _on_editor_closed():
+	if editor.is_connected("copy_scene_settings_pressed",self,"_on_copy_scene_settings_pressed"):
+		editor.disconnect("copy_scene_settings_pressed",self,"_on_copy_scene_settings_pressed")
+		editor.disconnect("paste_scene_settings_pressed",self,"_on_paste_scene_settings_pressed")
+		editor.disconnect("modal_closed",self,"_on_editor_closed")
