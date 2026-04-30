@@ -178,6 +178,7 @@ func instance_scenes() -> Array:
 				if new_scene_instance:
 					_scene_settings.single_instance = new_scene_instance
 					if _scene_settings.call_once:
+						_scene_settings.tile_id = _tile_id
 						if _scene_settings.default_parameters & 1:
 							_scene_settings.add_cell_pos(_cell_pos)
 						if tile_set.tile_get_tile_mode(_tile_id) != TileSet.SINGLE_TILE and _scene_settings.default_parameters & 1000:

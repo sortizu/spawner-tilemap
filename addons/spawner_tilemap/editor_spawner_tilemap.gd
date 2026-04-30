@@ -67,7 +67,7 @@ func _show_tile_to_scene_editor(spawner_tilemap: SpawnerTileMap):
 	editor = tile_to_scene_editor.instance()
 	editor.connect("copy_scene_settings_pressed",self,"_on_copy_scene_settings_pressed")
 	editor.connect("paste_scene_settings_pressed",self,"_on_paste_scene_settings_pressed")
-#	editor.connect("modal_closed",self,"_on_editor_closed")
+	editor.connect("modal_closed",self,"_on_editor_closed")
 	editor.editor_interface = editor_interface
 	editor.undo_redo = undo_redo
 	editor.spawner_tilemap = spawner_tilemap
