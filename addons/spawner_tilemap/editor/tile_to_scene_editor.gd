@@ -72,7 +72,6 @@ func _notification(what: int):
 	if what == NOTIFICATION_EXIT_TREE:
 		main_container.disconnect("child_exiting_tree",self,"_on_child_exited_in_main_container")
 		disconnect("popup_hide",self,"_on_WindowDialog_popup_hide")
-		page_number_line_edit
 		page_number_line_edit.disconnect("text_entered",self,"_on_PageNumber_text_entered")
 		next_page_button.disconnect("pressed",self,"_on_NextPageButton_pressed")
 		search_bar.disconnect("text_entered",self,"_on_search_text_entered")
@@ -171,9 +170,6 @@ func show_rows_in_page(_selected_page: int, _search_text: String = "*", _filter_
 							if _filter_option == FilterOptions.ASSIGNED_TILES:
 								filtered_by_option = _scene_settings and _scene_settings.selected_scene != null
 							elif _filter_option == FilterOptions.UNASSIGNED_TILES:
-								print(_dict_id,show_base_autotile)
-								if _scene_settings:
-									print(_scene_settings.selected_scene)
 								filtered_by_option = not _scene_settings or _scene_settings.selected_scene == null
 							else:
 								filtered_by_option = true
@@ -213,7 +209,7 @@ func show_rows_in_page(_selected_page: int, _search_text: String = "*", _filter_
 					if _filter_option == FilterOptions.ASSIGNED_TILES:
 						filtered_by_option = _scene_settings and _scene_settings.selected_scene != null
 					elif _filter_option == FilterOptions.UNASSIGNED_TILES:
-						filtered_by_option = _scene_settings and _scene_settings.selected_scene == null
+						filtered_by_option = not _scene_settings or _scene_settings.selected_scene == null
 					else:
 						filtered_by_option = true
 				if ignore_filters or (filtered_by_text and filtered_by_option):
@@ -232,7 +228,8 @@ func show_rows_in_page(_selected_page: int, _search_text: String = "*", _filter_
 				set_total_pages(_page_count - 1)
 			else:
 				set_total_pages(_page_count)
-	set_current_page(_selected_page)
+	call_deferred("set_current_page",_selected_page)
+#	set_current_page(_selected_page)
 
 ## Creates a custom resource to add data to each scene and to customize their spawning process
 func on_scene_settings_pressed(_tile_id: int, _dict_id: String, coord: Vector2, _texture: Texture, _region: Rect2):

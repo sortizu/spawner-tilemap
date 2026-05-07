@@ -5,7 +5,7 @@ var plugin
 
 func _enter_tree() -> void:
 	# Add custom type
-	#var custom_type_script: Script = preload("res://addons/spawner_tilemap/node/spawner_tile_map.gd")
+	#var custom_type_script: Script = preload("res://addons/spawner_tilemap/node/spawner_tilemap.gd")
 	#var spawner_tilemap_texture: Texture = get_editor_interface().get_base_control().get_icon("TileMap","EditorIcons")
 	#add_custom_type("SpawnerTileMap","TileMap",custom_type_script,spawner_tilemap_texture)
 	# Add EditorInspectorPlugin
