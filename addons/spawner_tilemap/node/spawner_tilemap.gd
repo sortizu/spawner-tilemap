@@ -3,7 +3,7 @@ extends TileMap
 class_name SpawnerTileMap, "res://addons/spawner_tilemap/spawner_tilemap.svg"
 
 ## Instances selected scenes based on the cells showed in this TileMap
-## To select the scenes to be instanced, press the "edit scenes" button that appears in the inspector
+## To select the scenes to be instanced, press the "edit scenes" button that is shown in the inspector
 ## when this node is selected.
 
 # CLASS VARIABLES
@@ -13,12 +13,14 @@ class_name SpawnerTileMap, "res://addons/spawner_tilemap/spawner_tilemap.svg"
 export (int, "On ready", "Deferred", "Threaded","Disabled") var instance_mode = 1
 # Clean all the cells from the tilemap after instancing the scenes, it doesn't consider specific scene settings for each tile
 export (bool) var clean_tiles
-# Path of the node to store all the scenes instances setted on tile_to_scene_dictionary
+# Path of the node which will contain all the instanced scenes
 export (NodePath) var instance_container: NodePath setget set_container_nodepath
 onready var container_node = get_node_or_null(instance_container)
-# Shows an error in the console when trying to instantiate an unassigned tile
+# Prints an error in the console when trying to instantiate an unassigned tile
 var print_errors: bool = true
-var show_time: bool = false
+# Prints the time the instancing process took in milliseconds
+var print_time: bool = false
+# Emits a signal for each instanced scene with a reference to the instance
 var signal_per_instance: bool
 # TileToSceneDictionary resource instance
 # This variable is created automatically and modified by the TileToSceneEditor
@@ -99,7 +101,7 @@ func _get_property_list() -> Array:
 	})
 	properties.append({
 		usage = PROPERTY_USAGE_DEFAULT,
-		name="show_time",
+		name="print_time",
 		type=TYPE_BOOL
 	})
 	properties.append({
@@ -144,6 +146,7 @@ func instance_scenes() -> Array:
 	var _params: Dictionary
 	var _call_once_params: Dictionary
 	var _temp_call_once_params: Array
+	var _axis_settings: Vector3
 	var _subtile_coord: Vector2
 	var _single_instance: bool
 	instancing = true
@@ -165,6 +168,7 @@ func instance_scenes() -> Array:
 		if _scene_settings and _scene_settings.instance_mode == 0:
 			continue
 		if _scene_settings and _scene_settings.selected_scene:
+			_axis_settings = Vector3(is_cell_x_flipped(_cell_pos.x,_cell_pos.y),is_cell_y_flipped(_cell_pos.x,_cell_pos.y),is_cell_transposed(_cell_pos.x,_cell_pos.y))
 			_single_instance = false
 			new_scene_instance = null
 			if _scene_settings:
@@ -185,7 +189,7 @@ func instance_scenes() -> Array:
 							_scene_settings.add_cell_subcoord(_subtile_coord)
 						if (tile_set.tile_get_tile_mode(_tile_id) == TileSet.SINGLE_TILE and _scene_settings.default_parameters & 1000) or \
 							(tile_set.tile_get_tile_mode(_tile_id) != TileSet.SINGLE_TILE and _scene_settings.default_parameters & 10000):
-								_scene_settings.add_cell_axis_setting(Vector3(is_cell_x_flipped(_cell_pos.x,_cell_pos.y),is_cell_y_flipped(_cell_pos.x,_cell_pos.y),is_cell_transposed(_cell_pos.x,_cell_pos.y)))
+								_scene_settings.add_cell_axis_setting(_axis_settings)
 						continue
 			if not (new_scene_instance and is_instance_valid(new_scene_instance)):
 				new_scene_instance = _scene_settings.selected_scene.instance()
@@ -224,14 +228,14 @@ func instance_scenes() -> Array:
 							_scene_settings.add_cell_subcoord(_subtile_coord)
 						if (tile_set.tile_get_tile_mode(_tile_id) == TileSet.SINGLE_TILE and _scene_settings.default_parameters & 1000) or \
 							(tile_set.tile_get_tile_mode(_tile_id) != TileSet.SINGLE_TILE and _scene_settings.default_parameters & 10000):
-								_scene_settings.add_cell_axis_setting(Vector3(is_cell_x_flipped(_cell_pos.x,_cell_pos.y),is_cell_y_flipped(_cell_pos.x,_cell_pos.y),is_cell_transposed(_cell_pos.x,_cell_pos.y)))
+								_scene_settings.add_cell_axis_setting(_axis_settings)
 						continue
 			# TODO: Add a path_to_target verification to avoid calling a new method
 			# Calling method after instancing
 			if instance_mode == 2: # Calling target nodes on idle time if threaded instancing is active
 				call_deferred("call_to_target", new_scene_instance, _tile_id, _cell_pos, _scene_settings)
 			else:
-				call_to_target(new_scene_instance, _tile_id, _cell_pos, Vector3(is_cell_x_flipped(_cell_pos.x,_cell_pos.y),is_cell_y_flipped(_cell_pos.x,_cell_pos.y),is_cell_transposed(_cell_pos.x,_cell_pos.y)), _scene_settings)
+				call_to_target(new_scene_instance, _tile_id, _cell_pos, _axis_settings, _scene_settings)
 		else:
 			if print_errors: printerr("[SpawnerTileMap/%s] Tile with id:"%[name]+str(_tile_id)+" does not have any related scene in the tile to scene dictionary.")
 			continue
@@ -243,11 +247,11 @@ func instance_scenes() -> Array:
 	if instance_mode == 2:
 		call_deferred("print","[SpawnerTileMap/%s] Scenes instanced successfully."%name)
 		call_deferred("emit_signal","intancing_finished")
-		if show_time: call_deferred("print","[SpawnerTileMap/%s] Time: %s"%[name,(Time.get_ticks_usec()-start)/1000000.0])
+		if print_time: call_deferred("print","[SpawnerTileMap/%s] Time: %s"%[name,(Time.get_ticks_usec()-start)/1000000.0])
 	else:
 		emit_signal("intancing_finished")
 		print("[SpawnerTileMap/%s] Scenes instanced successfully."%name)
-		if show_time: print("[SpawnerTileMap/%s] Time: %s"%[name,(Time.get_ticks_usec()-start)/1000000.0])
+		if print_time: print("[SpawnerTileMap/%s] Time: %s"%[name,(Time.get_ticks_usec()-start)/1000000.0])
 	instancing = false
 	return _instanced_scenes
 
