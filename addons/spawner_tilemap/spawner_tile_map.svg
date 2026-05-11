@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16">
+	<path fill="#8da5f3" d="M1 1v2h2V1zM1 4v2h2V4zm3 0v2h2V4zV4zM1 7v2h2V7zm3 0v2h2V7zM1 10v2h2v-2zm3 0v2h2v-2zm3 0v2h2v-2zm3 0v2h2v-2zM1 13v2h2v-2zm3 0v2h2v-2zm3 0v2h2v-2zm3 0v2h2v-2zm3 0v2h2v-2z" />
+	<path />
+	<path />
+	<path />
+	<path />
+	<path d="M15 6 15 4Q12 4 12 1.25L10 1Q10 6 15 6" fill="#8da5f3" />
+	<path stroke-linejoin="miter" />
+	<path />
+	<path d="M5 1l4 0 0 2-4 0" fill="#8da5f3" />
+	<path d="M13 7l2 0 0 4-2 0" fill="#8da5f3" />
+	<path d="l-2-2" />
+	<path d="M7.25 7.25l1.5 1.5 2.5-2.5-1.5-1.5" fill="#8da5f3" />
+</svg>

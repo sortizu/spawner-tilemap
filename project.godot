@@ -12,39 +12,20 @@ _global_script_classes=[ {
 "base": "TileMap",
 "class": "SpawnerTileMap",
 "language": "GDScript",
-"path": "res://addons/spawner_tilemap/spawner_tilemap_node/spawner_tile_map.gd"
-}, {
-"base": "Reference",
-"class": "TileToNodeRes",
-"language": "GDScript",
-"path": "res://addons/spawner_tilemap/spawner_tilemap_node/tile_to_scene_res.gd"
-}, {
-"base": "Resource",
-"class": "TileToSceneDictionary",
-"language": "GDScript",
-"path": "res://addons/spawner_tilemap/spawner_tilemap_node/tile_to_scene_dictionary.gd"
-}, {
-"base": "WindowDialog",
-"class": "TileToSceneEditor",
-"language": "GDScript",
-"path": "res://addons/spawner_tilemap/tile_to_scene_editor/tile_to_scene_editor.gd"
+"path": "res://addons/spawner_tilemap/node/spawner_tile_map.gd"
 } ]
 _global_script_class_icons={
-"SpawnerTileMap": "",
-"TileToNodeRes": "",
-"TileToSceneDictionary": "",
-"TileToSceneEditor": ""
+"SpawnerTileMap": "res://addons/spawner_tilemap/spawner_tile_map.svg"
 }
 
 [application]
 
 config/name="SpawnerTileMap"
-run/main_scene="res://addons/spawner_tilemap/spawner_tilemap_node/spawner_tile_map.tscn"
 config/icon="res://icon.png"
 
 [editor_plugins]
 
-enabled=PoolStringArray( "res://addons/godot-plugin-refresher/plugin.cfg", "res://addons/spawner_tilemap/plugin.cfg" )
+enabled=PoolStringArray( "res://addons/spawner_tilemap/plugin.cfg" )
 
 [gui]
 
