@@ -40,7 +40,6 @@ var cell_subcoord_pool: PoolVector2Array
 
 func _get_property_list():
 	var properties: Array = []
-	var flags: String
 	# Shows the tile related to this settings
 	properties.append({
 		name="Tile Data",
@@ -88,11 +87,6 @@ func _get_property_list():
 		hint = PROPERTY_HINT_ENUM,
 		hint_string = "Ignore,Single,Global Single,Multiple"
 	})
-	# Different parameters depending on tile mode
-	if tile_mode == TileSet.ATLAS_TILE or tile_mode == TileSet.AUTO_TILE:
-		flags = "Tile Position,Tile ID,Metadata,Subtile Coordinate,Axis Settings"
-	else:
-		flags = "Tile Position,Tile ID,Metadata,Axis Settings"
 	properties.append({
 		name="position_zero",
 		type=TYPE_BOOL,
@@ -101,7 +95,7 @@ func _get_property_list():
 	properties.append({
 		name="default_parameters",
 		type=TYPE_INT,
-		hint_string = flags,
+		hint_string = "Tile Position,Tile ID,Metadata,Subtile Coordinate,Axis Settings",
 		hint = PROPERTY_HINT_FLAGS,
 		usage = PROPERTY_USAGE_DEFAULT,
 	})
