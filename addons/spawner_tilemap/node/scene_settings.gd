@@ -33,10 +33,9 @@ var axis_chunk: int
 var subcoord_sub_index: int
 var subcoord_chunk: int
 var single_instance: Node
-# Array of positions used when the flag "one_call_at_end" is activated for an scene
-var cell_pos_pool: PoolVector2Array
-var cell_axis_settings_pool: PoolVector3Array
-var cell_subcoord_pool: PoolVector2Array
+
+func _init():
+	resource_local_to_scene = true
 
 func _get_property_list():
 	var properties: Array = []
@@ -129,51 +128,3 @@ func _get_property_list():
 func set_tile(new_tile: Texture):
 	if not tile:
 		tile = new_tile
-
-# METHODS FOR INSTANCING PROCESS
-
-func add_cell_pos(_pos: Vector2):
-	if pos_sub_index >= array_pool_size:
-		pos_sub_index = 0
-		pos_chunk += 1
-		cell_pos_pool.resize(len(cell_pos_pool) + array_pool_size)
-	elif cell_pos_pool.size() == 0:
-		cell_pos_pool.resize(array_pool_size)
-	cell_pos_pool.set(pos_chunk * array_pool_size + pos_sub_index, _pos)
-	pos_sub_index += 1
-
-func add_cell_axis_setting(_axis: Vector3):
-	if axis_sub_index >= array_pool_size:
-		axis_sub_index = 0
-		axis_chunk += 1
-		cell_axis_settings_pool.resize(len(cell_pos_pool) + array_pool_size)
-	elif cell_axis_settings_pool.size() == 0:
-		cell_axis_settings_pool.resize(array_pool_size)
-	cell_axis_settings_pool.set(axis_chunk * array_pool_size + axis_sub_index, _axis)
-	axis_sub_index += 1
-
-func add_cell_subcoord(_coord: Vector2):
-	if subcoord_sub_index >= array_pool_size:
-		subcoord_sub_index = 0
-		subcoord_chunk += 1
-		cell_subcoord_pool.resize(len(cell_subcoord_pool) + array_pool_size)
-	elif cell_subcoord_pool.size() == 0:
-		cell_subcoord_pool.resize(array_pool_size)
-	cell_subcoord_pool.set(subcoord_chunk * array_pool_size + subcoord_sub_index, _coord)
-	subcoord_sub_index += 1
-
-func trim():
-	if pos_chunk < 1:
-		cell_pos_pool.resize(pos_sub_index)
-	elif pos_sub_index < array_pool_size:
-		cell_pos_pool.resize(len(cell_pos_pool) - (array_pool_size - pos_sub_index))
-	
-	if axis_chunk < 1:
-		cell_axis_settings_pool.resize(axis_sub_index)
-	elif axis_sub_index < array_pool_size:
-		cell_axis_settings_pool.resize(len(cell_axis_settings_pool) - (array_pool_size - axis_sub_index))
-		
-	if subcoord_chunk < 1:
-		cell_subcoord_pool.resize(subcoord_sub_index)
-	elif subcoord_sub_index < array_pool_size:
-		cell_subcoord_pool.resize(len(cell_subcoord_pool) - (array_pool_size - subcoord_sub_index))

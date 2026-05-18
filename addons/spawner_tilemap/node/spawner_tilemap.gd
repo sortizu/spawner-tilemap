@@ -149,6 +149,9 @@ func instance_scenes() -> Array:
 	var _axis_settings: Vector3
 	var _subtile_coord: Vector2
 	var _single_instance: bool
+	# Dictionary used to saved data if flag "one_call_at_end" is enabled for a scene
+	var _cell_data_dict: Dictionary
+	var _cell_data: Array
 	instancing = true
 	for _cell_pos in get_used_cells():
 		if not instancing:
@@ -175,21 +178,35 @@ func instance_scenes() -> Array:
 				if _scene_settings.clean_tile:
 					set_cellv(_cell_pos,-1)
 				if _scene_settings.instance_mode == 1:
-					new_scene_instance = _scene_settings.single_instance
+					if is_instance_valid(_scene_settings.single_instance) and not _scene_settings.single_instance.is_queued_for_deletion():
+						new_scene_instance = _scene_settings.single_instance
 				if _scene_settings.instance_mode == 2:
+#					print(_subtile_coord,",",single_global_instances)
 					new_scene_instance = single_global_instances.get(_scene_settings.selected_scene)
-					if new_scene_instance and not _scene_settings.single_instance and _scene_settings.call_once: 
-						_instances_scene_settings.append(_scene_settings)
+					if new_scene_instance and _scene_settings.call_once: 
+						if not _scene_settings.single_instance or not (is_instance_valid(_scene_settings.single_instance) \
+						and not _scene_settings.single_instance.is_queued_for_deletion()):
+							_instances_scene_settings.append(_scene_settings)
 				if new_scene_instance:
 					_scene_settings.single_instance = new_scene_instance
 					if _scene_settings.call_once:
 						_scene_settings.tile_id = _tile_id
+						_cell_data = _cell_data_dict.get(_scene_settings,[])
+						if _cell_data.empty():
+							if _scene_settings.default_parameters & 1:
+								_cell_data.append([_cell_pos])
+							if _scene_settings.default_parameters & 1000:
+								_cell_data.append([_subtile_coord])
+							if _scene_settings.default_parameters & 10000:
+								_cell_data.append([_axis_settings])
+							_cell_data_dict[_scene_settings] = _cell_data
+							continue
 						if _scene_settings.default_parameters & 1:
-							_scene_settings.add_cell_pos(_cell_pos)
+							_cell_data[0].append(_cell_pos)
 						if _scene_settings.default_parameters & 1000:
-							_scene_settings.add_cell_subcoord(_subtile_coord)
+							_cell_data[1].append(_subtile_coord)
 						if _scene_settings.default_parameters & 10000:
-							_scene_settings.add_cell_axis_setting(_axis_settings)
+							_cell_data[2].append(_axis_settings)
 						continue
 			if not (new_scene_instance and is_instance_valid(new_scene_instance)):
 				new_scene_instance = _scene_settings.selected_scene.instance()
@@ -222,12 +239,14 @@ func instance_scenes() -> Array:
 					if _single_instance and _scene_settings.call_once:
 						_scene_settings.tile_id = _tile_id
 						_instances_scene_settings.append(_scene_settings)
+						_cell_data = []
 						if _scene_settings.default_parameters & 1:
-							_scene_settings.add_cell_pos(_cell_pos)
+							_cell_data.append([_cell_pos])
 						if _scene_settings.default_parameters & 1000:
-							_scene_settings.add_cell_subcoord(_subtile_coord)
+							_cell_data.append([_subtile_coord])
 						if _scene_settings.default_parameters & 10000:
-							_scene_settings.add_cell_axis_setting(_axis_settings)
+							_cell_data.append([_axis_settings])
+						_cell_data_dict[_scene_settings] = _cell_data
 						continue
 			# TODO: Add a path_to_target verification to avoid calling a new method
 			# Calling method after instancing
@@ -239,8 +258,8 @@ func instance_scenes() -> Array:
 			if print_errors: printerr("[SpawnerTileMap/%s] Tile with id:"%[name]+str(_tile_id)+" does not have any related scene in the tile to scene dictionary.")
 			continue
 	for _settings in _instances_scene_settings:
-		if instance_mode == 2: call_deferred("call_to_target_at_end",_settings)
-		else: call_to_target_at_end(_settings)
+		if instance_mode == 2: call_deferred("call_to_target_at_end",_cell_data_dict,_settings)
+		else: call_to_target_at_end(_cell_data_dict,_settings)
 	if clean_tiles:
 		clear()
 	if instance_mode == 2:
@@ -257,7 +276,7 @@ func instance_scenes() -> Array:
 func call_to_target(_target: Node, _tile_id: int, _cell_pos: Vector2, subtile_coord: Vector2, _axis_settings: Vector3, _scene_settings: SceneSettings):
 	if not _scene_settings: return
 	if _scene_settings.method_name.empty(): return
-	var params: Array = []
+	var _params: Array = []
 	if _target and not _scene_settings.path_to_target.empty(): _target = _target.get_node_or_null(_scene_settings.path_to_target)
 	if not _target:
 		printerr("[SpawnerTileMap/%s/call_to_target] Can't find target node '%s' (tile-id %s)"%[name,_scene_settings.path_to_target,_tile_id])
@@ -266,22 +285,23 @@ func call_to_target(_target: Node, _tile_id: int, _cell_pos: Vector2, subtile_co
 		printerr("[SpawnerTileMap/%s/call_to_target] Can't find method with name '%s' in target node (tile-id %s)"%[name,_scene_settings.method_name,_tile_id])
 		return
 	if _scene_settings.default_parameters & 0001:
-		params.append(_cell_pos)
+		_params.append(_cell_pos)
 	if _scene_settings.default_parameters & 0010:
-		params.append(_tile_id)
+		_params.append(_tile_id)
 	if _scene_settings.default_parameters & 0100:
-		params.append(_scene_settings.metadata)
+		_params.append(_scene_settings.metadata)
 	if _scene_settings.default_parameters & 1000:
-		params.append(subtile_coord)
+		_params.append(subtile_coord)
 	if _scene_settings.default_parameters & 10000:
-		params.append(_axis_settings)
-	_target.callv(_scene_settings.method_name, params)
+		_params.append(_axis_settings)
+	_target.callv(_scene_settings.method_name, _params)
 
 
-func call_to_target_at_end(_scene_settings: SceneSettings):
+func call_to_target_at_end(_cell_data_dict: Dictionary,_scene_settings: SceneSettings):
 	if _scene_settings.method_name.empty(): return
-	var params: Array = []
+	var _params: Array = []
 	var _target: Node
+	var _cell_data: Array
 	if _scene_settings.path_to_target.empty(): _target = _scene_settings.single_instance
 	else: _target = _scene_settings.single_instance.get_node_or_null(_scene_settings.path_to_target)
 	if not _target:
@@ -290,18 +310,18 @@ func call_to_target_at_end(_scene_settings: SceneSettings):
 	if not _target.has_method(_scene_settings.method_name): 
 		printerr("[SpawnerTileMap/%s/call_to_target_at_end] Can't find method with name '%s' in target node (tile-id %s)"%[name,_scene_settings.method_name,_scene_settings.tile_id])
 		return
-	_scene_settings.trim()
-	if _scene_settings.default_parameters & 0001:
-		params.append(_scene_settings.cell_pos_pool)
+	_cell_data = _cell_data_dict.get(_scene_settings,[])
+	if _cell_data.size() > 0 and _scene_settings.default_parameters & 0001:
+		_params.append(_cell_data[0])
 	if _scene_settings.default_parameters & 0010:
-		params.append(_scene_settings.tile_id)
+		_params.append(_scene_settings.tile_id)
 	if _scene_settings.default_parameters & 0100:
-		params.append(_scene_settings.metadata)
-	if _scene_settings.default_parameters & 1000:
-		params.append(_scene_settings.cell_subcoord_pool)
-	if _scene_settings.default_parameters & 10000:
-		params.append(_scene_settings.cell_axis_settings_pool)
-	_target.callv(_scene_settings.method_name, params)
+		_params.append(_scene_settings.metadata)
+	if _cell_data.size() > 1 and _scene_settings.default_parameters & 1000:
+		_params.append(_cell_data[1])
+	if _cell_data.size() > 2 and _scene_settings.default_parameters & 10000:
+		_params.append(_cell_data[2])
+	_target.callv(_scene_settings.method_name, _params)
 
 ## Adds the scenes instanced by [instance_scenes] as children of the [container_node]
 func _add_instanced_scenes(nodes: Array):
