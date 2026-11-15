@@ -34,8 +34,6 @@ var subcoord_sub_index: int
 var subcoord_chunk: int
 var single_instance: Node
 
-func _init():
-	resource_local_to_scene = true
 
 func _get_property_list():
 	var properties: Array = []

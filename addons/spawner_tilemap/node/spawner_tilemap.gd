@@ -140,7 +140,6 @@ func instance_scenes() -> Array:
 	var new_scene_instance: Node
 	var _scene_data: Array
 	var _scene_settings: SceneSettings
-	var _instances_scene_settings: Array
 	var _instanced_scenes: Array
 	var _target: Node
 	var _params: Dictionary
@@ -181,12 +180,7 @@ func instance_scenes() -> Array:
 					if is_instance_valid(_scene_settings.single_instance) and not _scene_settings.single_instance.is_queued_for_deletion():
 						new_scene_instance = _scene_settings.single_instance
 				if _scene_settings.instance_mode == 2:
-#					print(_subtile_coord,",",single_global_instances)
 					new_scene_instance = single_global_instances.get(_scene_settings.selected_scene)
-					if new_scene_instance and _scene_settings.call_once: 
-						if not _scene_settings.single_instance or not (is_instance_valid(_scene_settings.single_instance) \
-						and not _scene_settings.single_instance.is_queued_for_deletion()):
-							_instances_scene_settings.append(_scene_settings)
 				if new_scene_instance:
 					_scene_settings.single_instance = new_scene_instance
 					if _scene_settings.call_once:
@@ -217,12 +211,12 @@ func instance_scenes() -> Array:
 						new_scene_instance.rect_position = Vector2(_cell_pos.x*cell_size.x,_cell_pos.y*cell_size.y)
 				if instance_mode == 2: # Threaded instances nodes in idle time
 					container_node.call_deferred("add_child",new_scene_instance)
-					new_scene_instance.call_deferred("set_owner",get_tree().edited_scene_root)
+					new_scene_instance.call_deferred("set_owner",_edited_root())
 					if signal_per_instance:
 						call_deferred("emit_signal","scene_instanced",new_scene_instance,_tile_id_str,self)
 				else:
 					container_node.add_child(new_scene_instance)
-					new_scene_instance.set_owner(get_tree().edited_scene_root)
+					new_scene_instance.set_owner(_edited_root())
 					if signal_per_instance:
 						emit_signal("scene_instanced",new_scene_instance,_tile_id_str,self)
 				# Add the Spawner instance id to identify which nodes will be freed when the "clean" button is pressed
@@ -238,7 +232,6 @@ func instance_scenes() -> Array:
 						_single_instance = true
 					if _single_instance and _scene_settings.call_once:
 						_scene_settings.tile_id = _tile_id
-						_instances_scene_settings.append(_scene_settings)
 						_cell_data = []
 						if _scene_settings.default_parameters & 1:
 							_cell_data.append([_cell_pos])
@@ -257,7 +250,7 @@ func instance_scenes() -> Array:
 		else:
 			if print_errors: printerr("[SpawnerTileMap/%s] Tile with id:"%[name]+str(_tile_id)+" does not have any related scene in the tile to scene dictionary.")
 			continue
-	for _settings in _instances_scene_settings:
+	for _settings in _cell_data_dict.keys():
 		if instance_mode == 2: call_deferred("call_to_target_at_end",_cell_data_dict,_settings)
 		else: call_to_target_at_end(_cell_data_dict,_settings)
 	if clean_tiles:
@@ -332,7 +325,7 @@ func _add_instanced_scenes(nodes: Array):
 			return
 		node = node as Node
 		container_node.add_child(node)
-		node.set_owner(get_tree().edited_scene_root)
+		node.set_owner(_edited_root())
 
 ## Returns this TileMap state as a dictionary of all the used cells.
 ## This state can be used by [_restore_state] to restore all the cells
@@ -416,3 +409,11 @@ func _on_settings_changed():
 		_dict_temp.erase(key)
 	tile_to_scene_dictionary.dictionary = _dict_temp
 
+
+
+## The edited scene root, or null when there is no editor scene tree
+func _edited_root() -> Node:
+	# Owner is editor-only, and get_tree() logs when the node is outside the tree
+	if not Engine.editor_hint or not is_inside_tree():
+		return null
+	return get_tree().edited_scene_root
